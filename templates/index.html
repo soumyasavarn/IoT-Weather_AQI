@@ -1,0 +1,370 @@
+# templates/index.html
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Prediction Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f5f7fb;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            transition: transform 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .header-card {
+            background: linear-gradient(135deg, #4b6cb7, #182848);
+            color: white;
+        }
+        .header-card h1 {
+            font-weight: 700;
+        }
+        .weather-icon {
+            font-size: 2.5rem;
+            margin-right: 15px;
+        }
+        .prediction-table {
+            font-size: 0.9rem;
+        }
+        .prediction-table th {
+            background-color: #f0f2f5;
+        }
+        .visualization {
+            max-width: 100%;
+            height: auto;
+        }
+        .loader {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .metric-card {
+            text-align: center;
+            padding: 15px;
+        }
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+        .metric-title {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-4">
+        <!-- Header -->
+        <div class="card header-card mb-4 p-4">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h1><i class="fas fa-cloud-sun weather-icon"></i>Weather Forecast AI</h1>
+                    <p class="lead mb-0">Advanced weather predictions using machine learning</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <form id="prediction-form" class="d-inline-flex align-items-center">
+                        <label for="days" class="me-2">Forecast days:</label>
+                        <select id="days" name="days" class="form-select me-2" style="width: auto;">
+                            <option value="3">3 days</option>
+                            <option value="7" selected>7 days</option>
+                            <option value="14">14 days</option>
+                        </select>
+                        <button type="submit" class="btn btn-light">
+                            <i class="fas fa-sync-alt me-2"></i>Update
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading indicator -->
+        <div id="loading" class="text-center my-5">
+            <div class="loader"></div>
+            <p class="mt-3">Loading predictions...</p>
+        </div>
+
+        <!-- Weather summary cards -->
+        <div id="weather-summary" class="row mb-4" style="display: none;">
+            <div class="col-md-3">
+                <div class="card metric-card">
+                    <i class="fas fa-temperature-low text-primary mb-2" style="font-size: 2rem;"></i>
+                    <div class="metric-value" id="today-temp-min">--°C</div>
+                    <div class="metric-title">Min Temperature</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card metric-card">
+                    <i class="fas fa-temperature-high text-danger mb-2" style="font-size: 2rem;"></i>
+                    <div class="metric-value" id="today-temp-max">--°C</div>
+                    <div class="metric-title">Max Temperature</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card metric-card">
+                    <i class="fas fa-tint text-info mb-2" style="font-size: 2rem;"></i>
+                    <div class="metric-value" id="today-humidity">--%</div>
+                    <div class="metric-title">Humidity</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card metric-card">
+                    <i class="fas fa-cloud-rain text-secondary mb-2" style="font-size: 2rem;"></i>
+                    <div class="metric-value" id="today-precipitation">-- mm</div>
+                    <div class="metric-title">Precipitation</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Predictions container -->
+        <div id="predictions-container" style="display: none;">
+            <!-- Temperature section -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-thermometer-half me-2"></i>Temperature Forecast</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <img id="temp-min-viz" class="visualization mb-3 img-fluid" alt="Min Temperature Visualization">
+                            <img id="temp-max-viz" class="visualization img-fluid" alt="Max Temperature Visualization">
+                        </div>
+                        <div class="col-md-4">
+                            <h5>Temperature Predictions</h5>
+                            <div class="table-responsive">
+                                <table class="table table-hover prediction-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Min (°C)</th>
+                                            <th>Max (°C)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="temp-predictions"></tbody>
+                                </table>
+                            </div>
+                            <div class="mt-4">
+                                <h5>Important Factors</h5>
+                                <img id="temp-min-importance" class="img-fluid mb-2" alt="Min Temperature Feature Importance">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Humidity section -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0"><i class="fas fa-tint me-2"></i>Humidity Forecast</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <img id="humidity-viz" class="visualization img-fluid" alt="Humidity Visualization">
+                        </div>
+                        <div class="col-md-4">
+                            <h5>Humidity Predictions</h5>
+                            <div class="table-responsive">
+                                <table class="table table-hover prediction-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Humidity (%)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="humidity-predictions"></tbody>
+                                </table>
+                            </div>
+                            <div class="mt-4">
+                                <h5>Important Factors</h5>
+                                <img id="humidity-importance" class="img-fluid" alt="Humidity Feature Importance">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Precipitation section -->
+            <div class="card mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h4 class="mb-0"><i class="fas fa-cloud-rain me-2"></i>Precipitation Forecast</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <img id="precipitation-viz" class="visualization img-fluid" alt="Precipitation Visualization">
+                        </div>
+                        <div class="col-md-4">
+                            <h5>Precipitation Predictions</h5>
+                            <div class="table-responsive">
+                                <table class="table table-hover prediction-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Precipitation (mm)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="precipitation-predictions"></tbody>
+                                </table>
+                            </div>
+                            <div class="mt-4">
+                                <h5>Important Factors</h5>
+                                <img id="precipitation-importance" class="img-fluid" alt="Precipitation Feature Importance">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Model information -->
+        <div class="card" id="model-info" style="display: none;">
+            <div class="card-header bg-dark text-white">
+                <h4 class="mb-0"><i class="fas fa-brain me-2"></i>About the Model</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>How it Works</h5>
+                        <p>This weather prediction system uses Random Forest models to forecast various weather parameters based on historical patterns. The models are trained on synthetic data that simulates seasonal variations and typical weather patterns.</p>
+                        <p>Each model incorporates:</p>
+                        <ul>
+                            <li>Seasonal features (day of year, month)</li>
+                            <li>Recent weather patterns (lagged variables)</li>
+                            <li>Trend analysis</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>Accuracy & Limitations</h5>
+                        <p>The models currently achieve reasonable accuracy for short-term predictions (3-7 days), but accuracy decreases for longer-term forecasts due to the inherent unpredictability of weather systems.</p>
+                        <p>Key limitations:</p>
+                        <ul>
+                            <li>Currently using synthetic data (in a production environment, real historical weather data would improve accuracy)</li>
+                            <li>Does not account for sudden weather events or extreme changes</li>
+                            <li>Limited geographical specificity (would be enhanced with location-specific training)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Function to format date
+            function formatDate(dateString) {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('en-US', { 
+                    weekday: 'short',
+                    month: 'short', 
+                    day: 'numeric'
+                });
+            }
+
+            // Function to load predictions
+            function loadPredictions() {
+                $('#loading').show();
+                $('#predictions-container, #weather-summary, #model-info').hide();
+                
+                $.ajax({
+                    url: '/predict',
+                    type: 'POST',
+                    data: $('#prediction-form').serialize(),
+                    success: function(data) {
+                        // Update temperature predictions
+                        let tempRows = '';
+                        let minTemp = data.predictions.temp_min;
+                        let maxTemp = data.predictions.temp_max;
+                        
+                        for (let i = 0; i < minTemp.length; i++) {
+                            tempRows += `<tr>
+                                <td>${formatDate(minTemp[i].date)}</td>
+                                <td>${minTemp[i].temp_min.toFixed(1)}°C</td>
+                                <td>${maxTemp[i].temp_max.toFixed(1)}°C</td>
+                            </tr>`;
+                        }
+                        $('#temp-predictions').html(tempRows);
+                        
+                        // Update humidity predictions
+                        let humidityRows = '';
+                        let humidity = data.predictions.humidity;
+                        
+                        for (let i = 0; i < humidity.length; i++) {
+                            humidityRows += `<tr>
+                                <td>${formatDate(humidity[i].date)}</td>
+                                <td>${humidity[i].humidity.toFixed(1)}%</td>
+                            </tr>`;
+                        }
+                        $('#humidity-predictions').html(humidityRows);
+                        
+                        // Update precipitation predictions
+                        let precipRows = '';
+                        let precip = data.predictions.precipitation;
+                        
+                        for (let i = 0; i < precip.length; i++) {
+                            precipRows += `<tr>
+                                <td>${formatDate(precip[i].date)}</td>
+                                <td>${precip[i].precipitation.toFixed(2)} mm</td>
+                            </tr>`;
+                        }
+                        $('#precipitation-predictions').html(precipRows);
+                        
+                        // Update visualizations
+                        $('#temp-min-viz').attr('src', data.visualizations.temp_min);
+                        $('#temp-max-viz').attr('src', data.visualizations.temp_max);
+                        $('#humidity-viz').attr('src', data.visualizations.humidity);
+                        $('#precipitation-viz').attr('src', data.visualizations.precipitation);
+                        
+                        // Update feature importance plots
+                        $('#temp-min-importance').attr('src', data.feature_importances.temp_min);
+                        $('#humidity-importance').attr('src', data.feature_importances.humidity);
+                        $('#precipitation-importance').attr('src', data.feature_importances.precipitation);
+                        
+                        // Update summary cards for first day prediction
+                        $('#today-temp-min').text(`${minTemp[0].temp_min.toFixed(1)}°C`);
+                        $('#today-temp-max').text(`${maxTemp[0].temp_max.toFixed(1)}°C`);
+                        $('#today-humidity').text(`${humidity[0].humidity.toFixed(1)}%`);
+                        $('#today-precipitation').text(`${precip[0].precipitation.toFixed(2)} mm`);
+                        
+                        // Show predictions and hide loading
+                        $('#loading').hide();
+                        $('#predictions-container, #weather-summary, #model-info').show();
+                    },
+                    error: function() {
+                        alert('Error loading predictions. Please try again.');
+                        $('#loading').hide();
+                    }
+                });
+            }
+            
+            // Load predictions on form submit
+            $('#prediction-form').on('submit', function(e) {
+                e.preventDefault();
+                loadPredictions();
+            });
+            
+            // Initial load
+            loadPredictions();
+        });
+    </script>
+</body>
+</html>

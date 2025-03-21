@@ -17,7 +17,7 @@ flask_dashboard/
 2. Place each file in its respective location
 3. Install required packages:
    ```
-   pip install flask pandas numpy
+   pip install -r requirements.txt
    ```
 4. Run the application:
    ```
