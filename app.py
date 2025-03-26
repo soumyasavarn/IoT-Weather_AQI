@@ -319,6 +319,7 @@ def index():
     return render_template('index.html')
 
 @app.route('/predict', methods=['POST'])
+@app.route('/predict', methods=['POST'])
 def predict():
     """Generate and return weather predictions"""
     days = int(request.form.get('days', 7))
@@ -326,13 +327,17 @@ def predict():
     longitude = float(request.form.get('longitude', 91.7362))  # Default: Guwahati longitude
 
     # Fetch historical weather data for the last 30 days
-    end_date = (datetime.now()-timedelta(days=1)).strftime('%Y-%m-%d')
+    end_date = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
     start_date = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
     df = get_historical_weather(latitude, longitude, start_date, end_date)
 
     # Preprocess data
     print(df)
     processed_df = preprocess_data(df)
+
+    # Filter processed data to include only rows up to the current date
+    current_date = datetime.now().date()
+    processed_df = processed_df[processed_df['date'] <= pd.Timestamp(current_date)]
 
     # Make predictions for each target
     targets = ['temp_min', 'temp_max', 'humidity', 'precipitation']
@@ -341,8 +346,9 @@ def predict():
     feature_importances = {}
 
     for target in targets:
-        # Generate predictions
+        # Generate predictions starting from the current date
         pred_df = predict_weather(processed_df, target, days)
+        pred_df = pred_df[pred_df['date'] >= pd.Timestamp(current_date)]  # Filter predictions to start from today
         predictions[target] = pred_df[['date', target]].to_dict('records')
 
         # Create visualizations
