@@ -25,47 +25,48 @@ DATA_PATH = 'data'
 os.makedirs(MODEL_PATH, exist_ok=True)
 os.makedirs(DATA_PATH, exist_ok=True)
 
-# Sample data generation (would be replaced by actual data in production)
-def generate_sample_data():
-    """Generate synthetic weather data for demonstration"""
-    # Create date range for the past year
-    end_date = datetime.now()
-    start_date = end_date - timedelta(days=365)
-    date_range = pd.date_range(start=start_date, end=end_date, freq='D')
+# Initialize models (run once at startup)
+@app.before_request
+def initialize():
+    """Initialize models on application startup"""
+    # Load data from Guwahati_weather.csv
+    try:
+        df = pd.read_csv(f'{DATA_PATH}/Guwahati_weather.csv')
+        df['date'] = pd.to_datetime(df['date'])  # Ensure the 'date' column is in datetime format
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Guwahati_weather.csv not found in {DATA_PATH}. Please provide the file.")
+
+    # Preprocess data
+    processed_df = preprocess_data(df)
     
-    # Generate synthetic weather data
-    np.random.seed(42)  # For reproducibility
-    temp_min = np.sin(np.linspace(0, 2*np.pi, len(date_range))) * 10 + 5 + np.random.normal(0, 3, len(date_range))
-    temp_max = temp_min + 5 + np.random.normal(0, 2, len(date_range))
-    humidity = np.cos(np.linspace(0, 2*np.pi, len(date_range))) * 20 + 60 + np.random.normal(0, 5, len(date_range))
-    pressure = np.random.normal(1013, 5, len(date_range))
-    wind_speed = np.abs(np.random.normal(10, 3, len(date_range)))
-    precipitation = np.abs(np.random.exponential(0.5, len(date_range)))
+    # Define target columns and features
+    targets = ['temp_min', 'temp_max', 'humidity', 'precipitation']
+    feature_cols = [
+        'day_of_year_sin', 'day_of_year_cos', 'month', 'day',
+        'temp_min_lag_1', 'temp_min_lag_2', 'temp_min_lag_3',
+        'temp_max_lag_1', 'temp_max_lag_2', 'temp_max_lag_3',
+        'humidity_lag_1', 'humidity_lag_2', 'humidity_lag_3',
+        'precipitation_lag_1', 'precipitation_lag_2', 'precipitation_lag_3'
+    ]
     
-    # Create DataFrame
-    df = pd.DataFrame({
-        'date': date_range,
-        'temp_min': temp_min,
-        'temp_max': temp_max,
-        'humidity': humidity,
-        'pressure': pressure,
-        'wind_speed': wind_speed,
-        'precipitation': precipitation
-    })
-    
-    # Add some seasonal features
-    df['day_of_year'] = df['date'].dt.dayofyear
-    df['month'] = df['date'].dt.month
-    df['day'] = df['date'].dt.day
-    
-    return df
+    # Train models for each target
+    for target in targets:
+        train_model(processed_df, target, feature_cols)
 
 # Data preprocessing
 def preprocess_data(df):
     """Prepare weather data for modeling"""
-    # Create features from date
-    df['day_of_year_sin'] = np.sin(2 * np.pi * df['day_of_year']/365)
-    df['day_of_year_cos'] = np.cos(2 * np.pi * df['day_of_year']/365)
+    # Ensure the 'date' column is in datetime format
+    df['date'] = pd.to_datetime(df['date'])
+    
+    # Extract additional date-related features
+    df['day_of_year'] = df['date'].dt.dayofyear
+    df['month'] = df['date'].dt.month
+    df['day'] = df['date'].dt.day
+    
+    # Create seasonal features
+    df['day_of_year_sin'] = np.sin(2 * np.pi * df['day_of_year'] / 365)
+    df['day_of_year_cos'] = np.cos(2 * np.pi * df['day_of_year'] / 365)
     
     # Create lag features (previous days' weather)
     for i in range(1, 4):
@@ -246,30 +247,71 @@ def feature_importance_plot(target_col):
     return f'data:image/png;base64,{graph}'
 
 # Initialize models (run once at startup)
-@app.before_request
-def initialize():
-    """Initialize models on application startup"""
-    # Generate and save sample data
-    df = generate_sample_data()
-    df.to_csv(f'{DATA_PATH}/weather_data.csv', index=False)
-    
-    # Preprocess data
-    processed_df = preprocess_data(df)
-    
-    # Define target columns and features
-    targets = ['temp_min', 'temp_max', 'humidity', 'precipitation']
-    feature_cols = [
-        'day_of_year_sin', 'day_of_year_cos', 'month', 'day',
-        'temp_min_lag_1', 'temp_min_lag_2', 'temp_min_lag_3',
-        'temp_max_lag_1', 'temp_max_lag_2', 'temp_max_lag_3',
-        'humidity_lag_1', 'humidity_lag_2', 'humidity_lag_3',
-        'precipitation_lag_1', 'precipitation_lag_2', 'precipitation_lag_3'
-    ]
-    
-    # Train models for each target
-    for target in targets:
-        train_model(processed_df, target, feature_cols)
 
+import time
+import requests
+import pandas as pd
+from tqdm import tqdm
+
+def get_historical_weather(latitude, longitude, start_date, end_date):
+    """
+    Fetches historical daily weather data for a given location and date range.
+    Implements retry logic if the API rate limit is exceeded.
+    Returns: DataFrame with columns: date, temp_min, temp_max, humidity, pressure, wind_speed, precipitation, day_of_year, month, day
+    """
+    base_url = "https://archive-api.open-meteo.com/v1/archive"
+    params = {
+        "latitude": latitude,
+        "longitude": longitude,
+        "start_date": start_date,
+        "end_date": end_date,
+        "daily": "temperature_2m_min,temperature_2m_max,precipitation_sum,relative_humidity_2m_mean,surface_pressure_mean,windspeed_10m_max",
+        "timezone": "auto"
+    }
+
+    while True:
+        try:
+            response = requests.get(base_url, params=params)
+            print(f"Requesting URL: {response.url}")  # Debugging: Print the full URL
+            response.raise_for_status()  # Raise an error for bad responses (4xx and 5xx)
+
+            data = response.json()
+            if "daily" not in data or "time" not in data["daily"]:
+                raise ValueError("Invalid API response: Missing 'daily.time' field")
+
+            df = pd.DataFrame({
+                "date": pd.to_datetime(data["daily"]["time"]),
+                "temp_min": data["daily"].get("temperature_2m_min", []),
+                "temp_max": data["daily"].get("temperature_2m_max", []),
+                "humidity": data["daily"].get("relative_humidity_2m_mean", []),
+                "pressure": data["daily"].get("surface_pressure_mean", []),
+                "wind_speed": data["daily"].get("windspeed_10m_max", []),
+                "precipitation": data["daily"].get("precipitation_sum", [])
+            })
+
+            # Add additional time features
+            df["day_of_year"] = df["date"].dt.dayofyear
+            df["month"] = df["date"].dt.month
+            df["day"] = df["date"].dt.day
+
+            return df
+
+        except requests.exceptions.HTTPError as e:
+            if response.status_code == 400:
+                print(f"Bad Request: {response.json()}")  # Print the error details from the API
+                break
+            elif response.status_code == 429:
+                print("Rate limit exceeded. Waiting 60 seconds before retrying...")
+                time.sleep(60)
+            else:
+                print(f"HTTP Error: {e}. Retrying in 60 seconds...")
+                time.sleep(60)
+        except requests.exceptions.RequestException as e:
+            print(f"Request failed: {e}. Retrying in 60 seconds...")
+            time.sleep(60)
+        except ValueError as e:
+            print(f"Value Error: {e}")
+            break
 # Routes
 @app.route('/')
 def index():
@@ -280,29 +322,33 @@ def index():
 def predict():
     """Generate and return weather predictions"""
     days = int(request.form.get('days', 7))
-    
-    # Load data
-    df = pd.read_csv(f'{DATA_PATH}/weather_data.csv')
-    df['date'] = pd.to_datetime(df['date'])
-    
+    latitude = float(request.form.get('latitude', 26.1445))  # Default: Guwahati latitude
+    longitude = float(request.form.get('longitude', 91.7362))  # Default: Guwahati longitude
+
+    # Fetch historical weather data for the last 30 days
+    end_date = (datetime.now()-timedelta(days=1)).strftime('%Y-%m-%d')
+    start_date = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+    df = get_historical_weather(latitude, longitude, start_date, end_date)
+
     # Preprocess data
+    print(df)
     processed_df = preprocess_data(df)
-    
+
     # Make predictions for each target
     targets = ['temp_min', 'temp_max', 'humidity', 'precipitation']
     predictions = {}
     visualizations = {}
     feature_importances = {}
-    
+
     for target in targets:
         # Generate predictions
         pred_df = predict_weather(processed_df, target, days)
         predictions[target] = pred_df[['date', target]].to_dict('records')
-        
+
         # Create visualizations
         visualizations[target] = create_visualization(df, pred_df, target)
         feature_importances[target] = feature_importance_plot(target)
-    
+
     return jsonify({
         'predictions': predictions,
         'visualizations': visualizations,
