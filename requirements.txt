@@ -22,3 +22,5 @@ fonttools
 packaging
 six
 gunicorn
+requests
+tqdm
