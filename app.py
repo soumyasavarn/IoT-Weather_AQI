@@ -319,19 +319,34 @@ def index():
     return render_template('index.html')
 
 @app.route('/predict', methods=['POST'])
-@app.route('/predict', methods=['POST'])
 def predict():
-    """Generate and return weather predictions"""
+    """Generate and return weather predictions for a selected station"""
     days = int(request.form.get('days', 7))
-    latitude = float(request.form.get('latitude', 26.1445))  # Default: Guwahati latitude
-    longitude = float(request.form.get('longitude', 91.7362))  # Default: Guwahati longitude
+    selected_station = request.form.get('station')
+    print(f"Station is {selected_station}")
+    # Load station data from CSV
+    stations_file = f'{DATA_PATH}/Guwahati_stations.csv'
+    try:
+        stations_df = pd.read_csv(stations_file)
+    except FileNotFoundError:
+        return jsonify({"error": f"{stations_file} not found. Please provide the file."}), 400
+    print(stations_df)
+
+    # Find the selected station
+    station = stations_df[stations_df['name'] == selected_station].iloc[0].to_dict()
+    print(f"The station is {station}")
+    name = station["name"]
+    latitude = station["latitude"]
+    longitude = station["longitude"]
 
     # Fetch historical weather data for the last 30 days
-    end_date = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+    end_date = (datetime.now() - timedelta(days=2)).strftime('%Y-%m-%d')
     start_date = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
     df = get_historical_weather(latitude, longitude, start_date, end_date)
+    print(f"Weather {df}")
 
     # Preprocess data
+    print(f"Processing data for {name}")
     print(df)
     processed_df = preprocess_data(df)
 
@@ -355,7 +370,9 @@ def predict():
         visualizations[target] = create_visualization(df, pred_df, target)
         feature_importances[target] = feature_importance_plot(target)
 
+    # Return predictions for the selected station
     return jsonify({
+        'station': name,
         'predictions': predictions,
         'visualizations': visualizations,
         'feature_importances': feature_importances
