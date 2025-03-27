@@ -16,7 +16,12 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import io
 import base64
-
+import joblib
+import numpy as np
+import pandas as pd
+from datetime import timedelta
+from tensorflow.python.keras.models import load_model
+import tensorflow as tf
 app = Flask(__name__)
 
 # Configuration
@@ -35,41 +40,20 @@ def initialize():
         df['date'] = pd.to_datetime(df['date'])  # Ensure the 'date' column is in datetime format
     except FileNotFoundError:
         raise FileNotFoundError(f"Guwahati_weather.csv not found in {DATA_PATH}. Please provide the file.")
-
-    # Preprocess data
-    processed_df = preprocess_data(df)
     
-    # Define target columns and features
-    targets = ['temp_min', 'temp_max', 'humidity', 'precipitation']
-    feature_cols = [
-        'day_of_year_sin', 'day_of_year_cos', 'month', 'day',
-        'temp_min_lag_1', 'temp_min_lag_2', 'temp_min_lag_3',
-        'temp_max_lag_1', 'temp_max_lag_2', 'temp_max_lag_3',
-        'humidity_lag_1', 'humidity_lag_2', 'humidity_lag_3',
-        'precipitation_lag_1', 'precipitation_lag_2', 'precipitation_lag_3'
-    ]
-    
-    # Train models for each target
-    for target in targets:
-        train_model(processed_df, target, feature_cols)
 
 # Data preprocessing
-def preprocess_data(df):
+def preprocess_data(df, lag=7):
     """Prepare weather data for modeling"""
     # Ensure the 'date' column is in datetime format
     df['date'] = pd.to_datetime(df['date'])
-    
-    # Extract additional date-related features
     df['day_of_year'] = df['date'].dt.dayofyear
-    df['month'] = df['date'].dt.month
-    df['day'] = df['date'].dt.day
-    
     # Create seasonal features
     df['day_of_year_sin'] = np.sin(2 * np.pi * df['day_of_year'] / 365)
     df['day_of_year_cos'] = np.cos(2 * np.pi * df['day_of_year'] / 365)
-    
+    df = df.drop(columns=['day_of_year'])
     # Create lag features (previous days' weather)
-    for i in range(1, 4):
+    for i in range(1, lag):
         df[f'temp_min_lag_{i}'] = df['temp_min'].shift(i)
         df[f'temp_max_lag_{i}'] = df['temp_max'].shift(i)
         df[f'humidity_lag_{i}'] = df['humidity'].shift(i)
@@ -119,73 +103,103 @@ def train_model(df, target_col, feature_cols):
         }
     }
 
-def predict_weather(df, target_col, days_to_predict=7):
-    """Generate weather predictions for upcoming days"""
-    # Load model and scaler
-    model = joblib.load(f'{MODEL_PATH}/{target_col}/model.pkl')
-    scaler = joblib.load(f'{MODEL_PATH}/{target_col}/scaler.pkl')
-    feature_cols = joblib.load(f'{MODEL_PATH}/{target_col}/features.pkl')
+
+
+import numpy as np
+import pandas as pd
+from datetime import timedelta
+import joblib
+import tensorflow as tf
+
+def predict_weather_lstm(df, days_to_predict=7, sequence_length=7):
+    """
+    Predicts future weather using a sliding window approach for an LSTM model.
     
-    # Get the most recent data for prediction
+    Parameters:
+        df (DataFrame): Historical data containing at least the columns 'date',
+                        target columns (e.g. 'temp_min', 'temp_max', 'humidity', 'precipitation'),
+                        and additional feature columns.
+        days_to_predict (int): How many future days to predict.
+        sequence_length (int): Number of time steps (rows) expected by the LSTM.
+        
+    Returns:
+        DataFrame: A DataFrame with columns for date and predicted target values.
+    """
+    # Load the trained LSTM model and the scalers
+    model = tf.keras.models.load_model('models/weather_lstm_model.keras')
+    scaler_X = joblib.load('models/scaler_X.pkl')
+    scaler_y = joblib.load('models/scaler_y.pkl')
+    
+    # Define target columns (these must match what your model predicts)
+    target_cols = ['temp_min', 'temp_max', 'humidity', 'precipitation']
+    
+    # Ensure the data is sorted by date
+    df = df.sort_values(by='date').reset_index(drop=True)
+    
+    # Use the last `sequence_length` rows as the initial sequence for prediction.
+    current_sequence = df.tail(sequence_length).copy().reset_index(drop=True)
+    predictions = []
+    
+    # Get the most recent date from the historical data.
     last_date = df['date'].max()
     
-    # Create prediction dataframe
-    pred_dates = [last_date + timedelta(days=i+1) for i in range(days_to_predict)]
-    pred_df = pd.DataFrame({'date': pred_dates})
-    pred_df['day_of_year'] = pred_df['date'].dt.dayofyear
-    pred_df['month'] = pred_df['date'].dt.month
-    pred_df['day'] = pred_df['date'].dt.day
-    
-    # Add seasonal features
-    pred_df['day_of_year_sin'] = np.sin(2 * np.pi * pred_df['day_of_year']/365)
-    pred_df['day_of_year_cos'] = np.cos(2 * np.pi * pred_df['day_of_year']/365)
-    
-    # Initialize all possible lag feature columns that might be needed
-    possible_lag_cols = ['temp_min', 'temp_max', 'humidity', 'precipitation']
-    
-    # First, make sure all target columns exist in the dataframe
-    for col in possible_lag_cols:
-        if col not in pred_df.columns:
-            pred_df[col] = np.nan
-    
-    # Make predictions iteratively for each day
     for i in range(days_to_predict):
-        # Fill in lag features based on previous predictions or known values
-        if i == 0:
-            # For first prediction, use the last known values from original data
-            for j in range(1, 4):
-                idx = min(j, len(df))
-                for col in possible_lag_cols:
-                    if col in df.columns:  # Make sure the column exists in original data
-                        pred_df.loc[i, f'{col}_lag_{j}'] = df[col].iloc[-idx]
-        else:
-            # For subsequent predictions, use earlier predictions as lag features
-            for j in range(1, 4):
-                if i-j >= 0:
-                    # Use already predicted values
-                    for col in possible_lag_cols:
-                        if col in pred_df.columns:
-                            pred_df.loc[i, f'{col}_lag_{j}'] = pred_df.loc[i-j, col]
-                else:
-                    # Use known values from original data
-                    offset = j - i
-                    for col in possible_lag_cols:
-                        if col in df.columns:
-                            pred_df.loc[i, f'{col}_lag_{j}'] = df[col].iloc[-offset]
+        # Prepare input features: drop columns that are not features.
+        # Here, we drop 'date' and the target columns. Adjust if your scaler was fit on a different set.
+        X_pred = current_sequence.drop(columns=['date', 'month', 'day'] + target_cols, errors='ignore')
+        # X_pred shape should be (sequence_length, n_features)
         
-        # Get features for current prediction
-        X_pred = pred_df.loc[i:i, feature_cols]
+        # Scale the features using the pre-fitted scaler.
+        X_scaled = scaler_X.transform(X_pred)
+        # Reshape to match LSTM expected input: (1, sequence_length, n_features)
+        X_scaled = X_scaled.reshape((1, sequence_length, X_pred.shape[1]))
         
-        # Scale features
-        X_pred_scaled = scaler.transform(X_pred)
+        # Get prediction (the model outputs a scaled prediction for the targets)
+        y_pred_scaled = model.predict(X_scaled)[0]
+        # Inverse transform to get the actual predicted values.
+        y_pred = scaler_y.inverse_transform([y_pred_scaled])[0]
         
-        # Make prediction
-        y_pred = model.predict(X_pred_scaled)[0]
+        # Determine the new date for this prediction.
+        new_date = last_date + timedelta(days=i+1)
         
-        # Store prediction
-        pred_df.loc[i, target_col] = y_pred
+        # Build a new row for the predicted day.
+        # For non-target features, copy the last row of the current sequence.
+        new_row = current_sequence.iloc[-1].copy()
+        new_row['date'] = new_date
+        
+        # Update seasonal features if they are part of your model.
+        # (Assuming you use day_of_year, and its sine and cosine transforms)
+        day_of_year = new_date.timetuple().tm_yday
+        if 'day_of_year' in new_row:
+            new_row['day_of_year'] = day_of_year
+        if 'day_of_year_sin' in new_row:
+            new_row['day_of_year_sin'] = np.sin(2 * np.pi * day_of_year / 365)
+        if 'day_of_year_cos' in new_row:
+            new_row['day_of_year_cos'] = np.cos(2 * np.pi * day_of_year / 365)
+        
+        # Update target columns with the predicted values.
+        for j, col in enumerate(target_cols):
+            new_row[col] = y_pred[j]
+        y_pred = scaler_y.inverse_transform(y_pred_scaled.reshape(1, -1))[0]
+        # Clip negative precipitation predictions to 0
+        y_pred[3] = np.clip(y_pred[3], 0, None)
+
+        # Save the prediction in a list.
+        predictions.append({
+            'date': new_date.strftime('%Y-%m-%d'),
+            'temp_min': y_pred[0],
+            'temp_max': y_pred[1],
+            'humidity': y_pred[2],
+            'precipitation': y_pred[3]
+        })
+        
+        # Update the current sequence by dropping the oldest row and appending the new prediction.
+        new_row_df = pd.DataFrame([new_row])
+        current_sequence = pd.concat([current_sequence.iloc[1:], new_row_df], ignore_index=True)
     
-    return pred_df
+    # Convert predictions list to a DataFrame before returning.
+    return pd.DataFrame(predictions)
+
 
 # Generate visualizations
 def create_visualization(df, pred_df, target_col):
@@ -216,42 +230,18 @@ def create_visualization(df, pred_df, target_col):
     graph = base64.b64encode(image_png).decode('utf-8')
     return f'data:image/png;base64,{graph}'
 
-# Generate feature importance visualization
-def feature_importance_plot(target_col):
-    """Create visualization of feature importance"""
-    model = joblib.load(f'{MODEL_PATH}/{target_col}/model.pkl')
-    features = joblib.load(f'{MODEL_PATH}/{target_col}/features.pkl')
-    
-    # Get feature importances
-    importances = model.feature_importances_
-    
-    # Sort feature importances
-    indices = np.argsort(importances)[-10:]  # Top 10 features
-    
-    plt.figure(figsize=(10, 6))
-    plt.barh(range(len(indices)), importances[indices], align='center')
-    plt.yticks(range(len(indices)), [features[i] for i in indices])
-    plt.xlabel('Relative Importance')
-    plt.title(f'Feature Importance for {target_col.replace("_", " ").title()}')
-    plt.tight_layout()
-    
-    # Save plot to a base64 string
-    buffer = io.BytesIO()
-    plt.savefig(buffer, format='png')
-    buffer.seek(0)
-    image_png = buffer.getvalue()
-    buffer.close()
-    plt.close()
-    
-    graph = base64.b64encode(image_png).decode('utf-8')
-    return f'data:image/png;base64,{graph}'
-
-# Initialize models (run once at startup)
-
 import time
 import requests
 import pandas as pd
 from tqdm import tqdm
+import matplotlib.pyplot as plt
+import numpy as np
+import joblib
+import base64
+import io
+from eli5.sklearn import PermutationImportance
+import eli5
+from sklearn.inspection import permutation_importance
 
 def get_historical_weather(latitude, longitude, start_date, end_date):
     """
@@ -317,66 +307,69 @@ def get_historical_weather(latitude, longitude, start_date, end_date):
 def index():
     """Render the main page"""
     return render_template('index.html')
-
 @app.route('/predict', methods=['POST'])
 def predict():
     """Generate and return weather predictions for a selected station"""
     days = int(request.form.get('days', 7))
     selected_station = request.form.get('station')
     print(f"Station is {selected_station}")
-    # Load station data from CSV
+
+    # Load station metadata
     stations_file = f'{DATA_PATH}/Guwahati_stations.csv'
     try:
         stations_df = pd.read_csv(stations_file)
     except FileNotFoundError:
         return jsonify({"error": f"{stations_file} not found. Please provide the file."}), 400
-    print(stations_df)
 
-    # Find the selected station
     station = stations_df[stations_df['name'] == selected_station].iloc[0].to_dict()
-    print(f"The station is {station}")
     name = station["name"]
     latitude = station["latitude"]
     longitude = station["longitude"]
-
-    # Fetch historical weather data for the last 30 days
-    end_date = (datetime.now() - timedelta(days=2)).strftime('%Y-%m-%d')
+    print(station)
+    # Fetch historical weather
+    end_date = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
     start_date = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
     df = get_historical_weather(latitude, longitude, start_date, end_date)
-    print(f"Weather {df}")
 
-    # Preprocess data
-    print(f"Processing data for {name}")
-    print(df)
+    # Preprocess and filter up to today
     processed_df = preprocess_data(df)
-
-    # Filter processed data to include only rows up to the current date
     current_date = datetime.now().date()
     processed_df = processed_df[processed_df['date'] <= pd.Timestamp(current_date)]
+    print(processed_df)
+    print("Column Names")
+    print(processed_df.columns)
+    # Make predictions (all targets at once)
+    pred_df = predict_weather_lstm(processed_df, days)
+    pred_df['date'] = pd.to_datetime(pred_df['date'])
+    pred_df = pred_df[pred_df['date'] >= pd.Timestamp(current_date)]
 
-    # Make predictions for each target
+    # Extract target predictions into dictionary format
     targets = ['temp_min', 'temp_max', 'humidity', 'precipitation']
-    predictions = {}
-    visualizations = {}
-    feature_importances = {}
+    predictions = {
+        target: pred_df[['date', target]].to_dict('records')
+        for target in targets
+    }
 
-    for target in targets:
-        # Generate predictions starting from the current date
-        pred_df = predict_weather(processed_df, target, days)
-        pred_df = pred_df[pred_df['date'] >= pd.Timestamp(current_date)]  # Filter predictions to start from today
-        predictions[target] = pred_df[['date', target]].to_dict('records')
+    # Visualizations and feature importances
+    visualizations = {
+        target: create_visualization(df, pred_df, target)
+        for target in targets
+    }
+    print("Visualization done")
 
-        # Create visualizations
-        visualizations[target] = create_visualization(df, pred_df, target)
-        feature_importances[target] = feature_importance_plot(target)
+    # Return full result
+    try:
+        # Your existing prediction logic here
+        return jsonify({
+            'station': name,
+            'predictions': predictions,
+            'visualizations': visualizations
+        })
+    except Exception as e:
+        # Log the error details
+        app.logger.error("Error in /predict: %s", e, exc_info=True)
+        return jsonify({"error": str(e)}), 500
 
-    # Return predictions for the selected station
-    return jsonify({
-        'station': name,
-        'predictions': predictions,
-        'visualizations': visualizations,
-        'feature_importances': feature_importances
-    })
 
 if __name__ == '__main__':
     app.run(debug=True)
