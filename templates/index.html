@@ -77,10 +77,13 @@
                     <h1><i class="fas fa-cloud-sun weather-icon"></i>Weather Forecast AI</h1>
                     <p class="lead mb-0">Advanced weather predictions using machine learning</p>
                 </div>
-                <div class="col-md-6 text-md-end">
-                    <form id="prediction-form" class="d-inline-flex align-items-center">
-                        <label for="station" class="me-2">Select Station:</label>
-                        <select id="station" name="station" class="form-select me-2" style="width: auto;">
+    
+                <!-- Remove text-md-end if you want the form left-aligned -->
+                <!-- Or keep it if you want the entire form on the right, but reduce spacing on the button. -->
+                <div class="col-md-6 d-flex justify-content-end">
+                    <form id="prediction-form" class="d-inline-flex gap-2 align-items-center">
+                        <label for="station" class="mb-0">Select Station:</label>
+                        <select id="station" name="station" class="form-select" style="width: auto;">
                             <option value="Railway Colony, Guwahati - APCB_6941">Railway Colony, Guwahati - APCB_6941</option>
                             <option value="Railway Colony, Guwahati - APCB_10903">Railway Colony, Guwahati - APCB_10903</option>
                             <option value="Pan Bazaar, Guwahati - APCB_42240">Pan Bazaar, Guwahati - APCB_42240</option>
@@ -88,12 +91,15 @@
                             <option value="IITG, Guwahati - PCBA_3409360">IITG, Guwahati - PCBA_3409360</option>
                             <option value="LGBI Airport, Guwahati - PCBA_3409390">LGBI Airport, Guwahati - PCBA_3409390</option>
                         </select>
-                        <label for="days" class="me-2">Forecast days:</label>
-                        <select id="days" name="days" class="form-select me-2" style="width: auto;">
+    
+                        <label for="days" class="mb-0">Forecast days:</label>
+                        <select id="days" name="days" class="form-select" style="width: auto;">
                             <option value="3">3 days</option>
                             <option value="7" selected>7 days</option>
                             <option value="14">14 days</option>
                         </select>
+    
+                        <!-- Removed ms-3 so it doesn’t float too far from the selects -->
                         <button type="submit" class="btn btn-light">
                             <i class="fas fa-sync-alt me-2"></i>Update
                         </button>
@@ -167,10 +173,6 @@
                                     <tbody id="temp-predictions"></tbody>
                                 </table>
                             </div>
-                            <div class="mt-4">
-                                <h5>Important Factors</h5>
-                                <img id="temp-min-importance" class="img-fluid mb-2" alt="Min Temperature Feature Importance">
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -198,10 +200,6 @@
                                     </thead>
                                     <tbody id="humidity-predictions"></tbody>
                                 </table>
-                            </div>
-                            <div class="mt-4">
-                                <h5>Important Factors</h5>
-                                <img id="humidity-importance" class="img-fluid" alt="Humidity Feature Importance">
                             </div>
                         </div>
                     </div>
@@ -231,10 +229,6 @@
                                     <tbody id="precipitation-predictions"></tbody>
                                 </table>
                             </div>
-                            <div class="mt-4">
-                                <h5>Important Factors</h5>
-                                <img id="precipitation-importance" class="img-fluid" alt="Precipitation Feature Importance">
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -250,7 +244,7 @@
                 <div class="row">
                     <div class="col-md-6">
                         <h5>How it Works</h5>
-                        <p>This weather prediction system uses Random Forest models to forecast various weather parameters based on historical patterns. The models are trained on synthetic data that simulates seasonal variations and typical weather patterns.</p>
+                        <p>This weather prediction system uses an LSTM model to forecast various weather parameters based on historical patterns. The model is trained on real historical data that simulates seasonal variations and typical weather patterns.</p>
                         <p>Each model incorporates:</p>
                         <ul>
                             <li>Seasonal features (day of year, month)</li>
@@ -260,10 +254,9 @@
                     </div>
                     <div class="col-md-6">
                         <h5>Accuracy & Limitations</h5>
-                        <p>The models currently achieve reasonable accuracy for short-term predictions (3-7 days), but accuracy decreases for longer-term forecasts due to the inherent unpredictability of weather systems.</p>
+                        <p>The model currently achieves reasonable accuracy for short-term predictions (3-7 days), but accuracy decreases for longer-term forecasts due to the inherent unpredictability of weather systems.</p>
                         <p>Key limitations:</p>
                         <ul>
-                            <li>Currently using synthetic data (in a production environment, real historical weather data would improve accuracy)</li>
                             <li>Does not account for sudden weather events or extreme changes</li>
                             <li>Limited geographical specificity (would be enhanced with location-specific training)</li>
                         </ul>
@@ -341,11 +334,6 @@
                         $('#humidity-viz').attr('src', data.visualizations.humidity);
                         $('#precipitation-viz').attr('src', data.visualizations.precipitation);
                         
-                        // Update feature importance plots
-                        $('#temp-min-importance').attr('src', data.feature_importances.temp_min);
-                        $('#humidity-importance').attr('src', data.feature_importances.humidity);
-                        $('#precipitation-importance').attr('src', data.feature_importances.precipitation);
-                        
                         // Update summary cards for first day prediction
                         $('#today-temp-min').text(`${minTemp[0].temp_min.toFixed(1)}°C`);
                         $('#today-temp-max').text(`${maxTemp[0].temp_max.toFixed(1)}°C`);
@@ -356,10 +344,13 @@
                         $('#loading').hide();
                         $('#predictions-container, #weather-summary, #model-info').show();
                     },
-                    error: function() {
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        console.error("AJAX error:", textStatus, errorThrown);
+                        console.error("Server response:", jqXHR.responseText);
                         alert('Error loading predictions. Please try again.');
                         $('#loading').hide();
                     }
+
                 });
             }
             
