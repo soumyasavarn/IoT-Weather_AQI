@@ -24,3 +24,4 @@ six
 gunicorn
 requests
 tqdm
+tensorflow
