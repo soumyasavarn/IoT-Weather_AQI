@@ -3,7 +3,7 @@ from flask import Flask, render_template, request, jsonify
 import pandas as pd
 import numpy as np
 import joblib
-from datetime import datetime, timedelta
+import datetime
 import os
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
@@ -28,7 +28,8 @@ MODEL_PATH = 'models'
 DATA_PATH = 'data'
 os.makedirs(MODEL_PATH, exist_ok=True)
 os.makedirs(DATA_PATH, exist_ok=True)
-
+API_KEY = "aac405e628f9c30a047d3de13192a7f7"
+BASE_URL = "http://api.openweathermap.org/data/2.5/air_pollution/history"
 # Initialize models (run once at startup)
 @app.before_request
 def initialize():
@@ -321,6 +322,189 @@ def aqi_prediction():
 def iot_prediction():
     """Render the Prediction Using IoT Device page"""
     return render_template('iot_prediction.html')
+
+def to_timestamp(dt):
+    """Convert a datetime object to a Unix timestamp."""
+    return int(dt.timestamp())
+
+def fetch_daily_air_quality(station, day):
+    """
+    Fetch the historical air quality data for a specific station on a given day.
+    Retrieves the AQI as well as hourly pollutant values for:
+      - co, no, no2, o3, so2, pm2_5, pm10, nh3
+    and computes daily averages.
+    """
+    day_start = datetime.datetime.combine(day, datetime.time.min)
+    day_end = datetime.datetime.combine(day, datetime.time.max)
+    
+    params = {
+        "lat": station["latitude"],
+        "lon": station["longitude"],
+        "start": to_timestamp(day_start),
+        "end": to_timestamp(day_end),
+        "appid": API_KEY
+    }
+    
+    response = requests.get(BASE_URL, params=params)
+    if response.status_code == 200:
+        data = response.json()
+        
+        # Lists to hold hourly data
+        hourly_aqi = []
+        # Define the pollutant components to extract
+        components_keys = ["co", "no", "no2", "o3", "so2", "pm2_5", "pm10", "nh3"]
+        hourly_components = {key: [] for key in components_keys}
+        
+        for entry in data.get("list", []):
+            # Extract AQI value from "main"
+            if "main" in entry and "aqi" in entry["main"]:
+                hourly_aqi.append(entry["main"]["aqi"])
+            
+            # Extract pollutant components if available
+            if "components" in entry:
+                for key in components_keys:
+                    if key in entry["components"]:
+                        hourly_components[key].append(entry["components"][key])
+        
+        # Compute daily averages for AQI and each pollutant
+        daily_avg_aqi = sum(hourly_aqi) / len(hourly_aqi) if hourly_aqi else None
+        daily_avg_components = {}
+        for key, values in hourly_components.items():
+            daily_avg_components[key] = sum(values) / len(values) if values else None
+        
+        return daily_avg_aqi, daily_avg_components
+    else:
+        print(f"Error on {day} for {station['name']}: {response.status_code} - {response.text}")
+        return None, {}
+
+def create_input_sequences(df, pollutants, window_size):
+    """
+    Build sliding windows of length 'window_size' for a single station.
+    
+    Returns:
+    - X: shape (num_samples, window_size * num_features)
+    
+    No target values (y) are returned.
+    """
+    X_list = []
+
+    # Sort by date to ensure time order
+    df = df.sort_values("date").reset_index(drop=True)
+
+    # Drop rows with missing pollutant values
+    df = df.dropna(subset=pollutants)
+
+    if len(df) < window_size:
+        return np.empty((0, len(pollutants) * window_size))
+
+    arr = df[pollutants].values  # shape: (n_samples, n_features)
+
+    for i in range(len(arr) - window_size + 1):  # include the last possible window
+        X_window = arr[i : i + window_size].flatten()
+        X_list.append(X_window)
+
+    X = np.array(X_list)
+    return X
+
+
+@app.route('/predict-aqi', methods=['POST'])
+def predict_aqi():
+    days = int(request.form.get('days', 7))
+    station = request.form.get('station')
+    print(f"Station is {station}")
+
+    stations = {
+    'Railway Colony, Guwahati - APCB_6941': {'latitude': 26.1445, 'longitude': 91.7362},
+    'Railway Colony, Guwahati - APCB_10903': {'latitude': 26.181742, 'longitude': 91.78063},
+    'Pan Bazaar, Guwahati - APCB_42240': {'latitude': 26.1875, 'longitude': 91.744194},
+    'IITG, Guwahati - PCBA_361411': {'latitude': 26.2028636, 'longitude': 91.70046436},
+    'IITG, Guwahati - PCBA_3409360': {'latitude': 26.2028636, 'longitude': 91.70046436},
+    'LGBI Airport, Guwahati - PCBA_3409390': {'latitude': 26.10887, 'longitude': 91.589544}
+        }
+
+
+    end_date = datetime.date.today()
+    start_date = end_date - datetime.timedelta(days=6)
+    print(f"\nFetching air quality data for {station} (lat: {stations[station]['latitude']}, lon: {stations[station]['longitude']})")
+    current_date = start_date
+    records = []
+    while current_date <= end_date:
+        avg_aqi, avg_components = fetch_daily_air_quality(stations[station], current_date)
+        
+        # Build a record (dictionary) with the station name, date, and pollutant averages
+        record = {
+            "station": station,
+            "date": current_date,
+            "avg_aqi": avg_aqi
+        }
+        for comp, value in avg_components.items():
+            record[comp] = value
+                
+        print(f"  {current_date}: AQI={avg_aqi}, Pollutants={avg_components}")
+        records.append(record)
+        # Advance to the next day
+        current_date += datetime.timedelta(days=1)
+        # Pause briefly to respect API rate limits (adjust as necessary)
+        time.sleep(1)
+
+    df = pd.DataFrame(records)
+    X = create_input_sequences(df, pollutants=['avg_aqi', 'co', 'no', 'no2', 'o3', 'so2', 'pm2_5', 'pm10', 'nh3'], window_size=7)
+    scaler = joblib.load("models/aqi_scaler.pkl")
+    model = tf.keras.models.load_model("models/aqi_best_model.keras")
+
+    df = pd.DataFrame(records)
+
+    pollutants = ['avg_aqi', 'co', 'no', 'no2', 'o3', 'so2', 'pm2_5', 'pm10', 'nh3']
+    window_size = 7
+
+    # Create initial input sequence
+    df = df.sort_values("date").reset_index(drop=True)
+    df = df.dropna(subset=pollutants)
+    # Initial real 7-day window: shape (7, 9)
+
+    window = df[pollutants].values[-window_size:]  # shape: (7, 9)
+
+    predictions = []
+    prediction_dates = []
+
+    for step in range(days):
+        window_flat = window.flatten().reshape(1, -1)   # (1, 63)
+        X_scaled = scaler.transform(window_flat)
+
+        next_day_pred = model.predict(X_scaled)[0]  # (9,)
+        predictions.append(next_day_pred)
+
+        window = np.vstack([window[1:], next_day_pred])  
+
+        prediction_dates.append(end_date + datetime.timedelta(days=step + 1))
+
+    # Convert predictions to a DataFrame for easier handling
+    pred_df = pd.DataFrame(predictions, columns=pollutants)
+    pred_df['date'] = prediction_dates
+
+    # Generate a plot
+    plt.figure(figsize=(10, 6))
+    plt.plot(pred_df['date'], pred_df['avg_aqi'], label='Predicted AQI', marker='o')
+    plt.xlabel('Date')
+    plt.ylabel('AQI')
+    plt.title('Predicted AQI Over Time')
+    plt.legend()
+    plt.grid(True)
+
+    # Save the plot to a base64 string
+    buffer = io.BytesIO()
+    plt.savefig(buffer, format='png')
+    buffer.seek(0)
+    image_png = buffer.getvalue()
+    buffer.close()
+    plt.close()
+    graph = base64.b64encode(image_png).decode('utf-8')
+
+    return jsonify({
+        'predictions': pred_df.to_dict('records'),
+        'plot': f'data:image/png;base64,{graph}'
+    })
+
 @app.route('/predict', methods=['POST'])
 def predict():
     """Generate and return weather predictions for a selected station"""
@@ -339,6 +523,8 @@ def predict():
     name = station["name"]
     latitude = station["latitude"]
     longitude = station["longitude"]
+
+
     print(station)
     # Fetch historical weather
     end_date = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
