@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Weather Prediction Dashboard{% endblock %}</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <style>
+        body {
+            background-color: #f5f7fb;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            transition: transform 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .header-card {
+            background: linear-gradient(135deg, #4b6cb7, #182848);
+            color: white;
+        }
+        .header-card h1 {
+            font-weight: 700;
+        }
+        .navbar-brand {
+            font-weight: bold;
+            color: #4b6cb7 !important;
+        }
+        .navbar-nav .nav-link {
+            font-weight: 500;
+        }
+        footer {
+            background-color: #f0f2f5;
+            padding: 10px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-md navbar-light bg-light border">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">Weather Dashboard</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbar">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="/predict">Weather Prediction</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/aqi_prediction">AQI Prediction</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/iot_prediction">Prediction Using IoT Device</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container py-4">
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center text-muted">
+        <small>&copy; 2025 Weather Prediction Dashboard. Powered by AI and IoT.</small>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

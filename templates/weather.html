@@ -1,0 +1,242 @@
+{% extends "layout.html" %}
+
+{% block title %}Weather Prediction{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="card header-card mb-4 p-4">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h1><i class="fas fa-cloud-sun weather-icon"></i>Weather Forecast AI</h1>
+                <p class="lead mb-0">Advanced weather predictions using deep learning</p>
+            </div>
+            <div class="col-md-6 d-flex justify-content-end">
+                <form id="prediction-form" class="d-inline-flex gap-2 align-items-center">
+                    <label for="station" class="mb-0">Select Station:</label>
+                    <select id="station" name="station" class="form-select" style="width: auto;">
+                        <option value="Railway Colony, Guwahati - APCB_6941">Railway Colony, Guwahati - APCB_6941</option>
+                        <option value="Railway Colony, Guwahati - APCB_10903">Railway Colony, Guwahati - APCB_10903</option>
+                        <option value="Pan Bazaar, Guwahati - APCB_42240">Pan Bazaar, Guwahati - APCB_42240</option>
+                        <option value="IITG, Guwahati - PCBA_361411">IITG, Guwahati - PCBA_361411</option>
+                        <option value="IITG, Guwahati - PCBA_3409360">IITG, Guwahati - PCBA_3409360</option>
+                        <option value="LGBI Airport, Guwahati - PCBA_3409390">LGBI Airport, Guwahati - PCBA_3409390</option>
+                    </select>
+                    <label for="days" class="mb-0">Forecast days:</label>
+                    <select id="days" name="days" class="form-select" style="width: auto;">
+                        <option value="3">3 days</option>
+                        <option value="7" selected>7 days</option>
+                        <option value="14">14 days</option>
+                    </select>
+                    <button type="submit" class="btn btn-light">
+                        <i class="fas fa-sync-alt me-2"></i>Update
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading indicator -->
+    <div id="loading" class="text-center my-5" style="display: none;">
+        <div class="loader"></div>
+        <p class="mt-3">Loading predictions...</p>
+    </div>
+
+    <!-- Weather summary cards -->
+    <div id="weather-summary" class="row mb-4" style="display: none;">
+        <div class="col-md-3">
+            <div class="card metric-card">
+                <i class="fas fa-temperature-low text-primary mb-2" style="font-size: 2rem;"></i>
+                <div class="metric-value" id="today-temp-min">--°C</div>
+                <div class="metric-title">Min Temperature</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card metric-card">
+                <i class="fas fa-temperature-high text-danger mb-2" style="font-size: 2rem;"></i>
+                <div class="metric-value" id="today-temp-max">--°C</div>
+                <div class="metric-title">Max Temperature</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card metric-card">
+                <i class="fas fa-tint text-info mb-2" style="font-size: 2rem;"></i>
+                <div class="metric-value" id="today-humidity">--%</div>
+                <div class="metric-title">Humidity</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card metric-card">
+                <i class="fas fa-cloud-rain text-secondary mb-2" style="font-size: 2rem;"></i>
+                <div class="metric-value" id="today-precipitation">-- mm</div>
+                <div class="metric-title">Precipitation</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Predictions container -->
+    <div id="predictions-container" style="display: none;">
+        <!-- Temperature section -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-thermometer-half me-2"></i>Temperature Forecast</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <img id="temp-min-viz" class="visualization mb-3 img-fluid" alt="Min Temperature Visualization">
+                        <img id="temp-max-viz" class="visualization img-fluid" alt="Max Temperature Visualization">
+                    </div>
+                    <div class="col-md-4">
+                        <h5>Temperature Predictions</h5>
+                        <div class="table-responsive">
+                            <table class="table table-hover prediction-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Min (°C)</th>
+                                        <th>Max (°C)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="temp-predictions"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Humidity section -->
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h4 class="mb-0"><i class="fas fa-tint me-2"></i>Humidity Forecast</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <img id="humidity-viz" class="visualization img-fluid" alt="Humidity Visualization">
+                    </div>
+                    <div class="col-md-4">
+                        <h5>Humidity Predictions</h5>
+                        <div class="table-responsive">
+                            <table class="table table-hover prediction-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Humidity (%)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="humidity-predictions"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Precipitation section -->
+        <div class="card mb-4">
+            <div class="card-header bg-secondary text-white">
+                <h4 class="mb-0"><i class="fas fa-cloud-rain me-2"></i>Precipitation Forecast</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <img id="precipitation-viz" class="visualization img-fluid" alt="Precipitation Visualization">
+                    </div>
+                    <div class="col-md-4">
+                        <h5>Precipitation Predictions</h5>
+                        <div class="table-responsive">
+                            <table class="table table-hover prediction-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Precipitation (mm)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="precipitation-predictions"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('prediction-form').addEventListener('submit', function (e) {
+        e.preventDefault(); // Prevent the form from submitting normally
+        const formData = new FormData(this);
+
+        // Show loading indicator
+        document.getElementById('loading').style.display = 'block';
+
+        fetch('/predict', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('loading').style.display = 'none';
+
+            // Update weather summary cards
+            document.getElementById('today-temp-min').textContent = `${data.predictions.temp_min[0].temp_min.toFixed(1)}°C`;
+            document.getElementById('today-temp-max').textContent = `${data.predictions.temp_max[0].temp_max.toFixed(1)}°C`;
+            document.getElementById('today-humidity').textContent = `${data.predictions.humidity[0].humidity.toFixed(1)}%`;
+            document.getElementById('today-precipitation').textContent = `${data.predictions.precipitation[0].precipitation.toFixed(1)} mm`;
+
+            // Populate temperature predictions table
+            const tempPredictionsTable = document.getElementById('temp-predictions');
+            tempPredictionsTable.innerHTML = ''; // Clear existing rows
+            data.predictions.temp_min.forEach((prediction, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${prediction.date}</td>
+                    <td>${data.predictions.temp_min[index].temp_min.toFixed(1)}°C</td>
+                    <td>${data.predictions.temp_max[index].temp_max.toFixed(1)}°C</td>
+                `;
+                tempPredictionsTable.appendChild(row);
+            });
+
+            // Populate humidity predictions table
+            const humidityPredictionsTable = document.getElementById('humidity-predictions');
+            humidityPredictionsTable.innerHTML = ''; // Clear existing rows
+            data.predictions.humidity.forEach(prediction => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${prediction.date}</td>
+                    <td>${prediction.humidity.toFixed(1)}%</td>
+                `;
+                humidityPredictionsTable.appendChild(row);
+            });
+
+            // Populate precipitation predictions table
+            const precipitationPredictionsTable = document.getElementById('precipitation-predictions');
+            precipitationPredictionsTable.innerHTML = ''; // Clear existing rows
+            data.predictions.precipitation.forEach(prediction => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${prediction.date}</td>
+                    <td>${prediction.precipitation.toFixed(1)} mm</td>
+                `;
+                precipitationPredictionsTable.appendChild(row);
+            });
+
+            // Update graphs
+            document.getElementById('temp-min-viz').src = data.visualizations.temp_min;
+            document.getElementById('temp-max-viz').src = data.visualizations.temp_max;
+            document.getElementById('humidity-viz').src = data.visualizations.humidity;
+            document.getElementById('precipitation-viz').src = data.visualizations.precipitation;
+
+            // Show predictions container
+            document.getElementById('predictions-container').style.display = 'block';
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to fetch predictions. Please try again.');
+            document.getElementById('loading').style.display = 'none';
+        });
+    });
+</script>
+{% endblock %}
