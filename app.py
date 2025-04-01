@@ -306,6 +306,21 @@ def get_historical_weather(latitude, longitude, start_date, end_date):
 def index():
     """Render the main page"""
     return render_template('index.html')
+
+@app.route('/weather', methods=['GET'])
+def weather():
+    """Render the Weather Prediction page"""
+    return render_template('weather.html')
+
+@app.route('/aqi_prediction')
+def aqi_prediction():
+    """Render the AQI Prediction page"""
+    return render_template('aqi_prediction.html')
+
+@app.route('/iot_prediction')
+def iot_prediction():
+    """Render the Prediction Using IoT Device page"""
+    return render_template('iot_prediction.html')
 @app.route('/predict', methods=['POST'])
 def predict():
     """Generate and return weather predictions for a selected station"""
