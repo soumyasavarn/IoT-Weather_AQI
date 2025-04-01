@@ -186,13 +186,19 @@
             document.getElementById('today-humidity').textContent = `${data.predictions.humidity[0].humidity.toFixed(1)}%`;
             document.getElementById('today-precipitation').textContent = `${data.predictions.precipitation[0].precipitation.toFixed(1)} mm`;
 
+            // Helper function to format date (remove timestamp)
+            const formatDate = (dateString) => {
+                const date = new Date(dateString);
+                return date.toISOString().split('T')[0]; // Keep only the date part
+            };
+
             // Populate temperature predictions table
             const tempPredictionsTable = document.getElementById('temp-predictions');
             tempPredictionsTable.innerHTML = ''; // Clear existing rows
             data.predictions.temp_min.forEach((prediction, index) => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td>${prediction.date}</td>
+                    <td>${formatDate(prediction.date)}</td>
                     <td>${data.predictions.temp_min[index].temp_min.toFixed(1)}°C</td>
                     <td>${data.predictions.temp_max[index].temp_max.toFixed(1)}°C</td>
                 `;
@@ -205,7 +211,7 @@
             data.predictions.humidity.forEach(prediction => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td>${prediction.date}</td>
+                    <td>${formatDate(prediction.date)}</td>
                     <td>${prediction.humidity.toFixed(1)}%</td>
                 `;
                 humidityPredictionsTable.appendChild(row);
@@ -217,7 +223,7 @@
             data.predictions.precipitation.forEach(prediction => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td>${prediction.date}</td>
+                    <td>${formatDate(prediction.date)}</td>
                     <td>${prediction.precipitation.toFixed(1)} mm</td>
                 `;
                 precipitationPredictionsTable.appendChild(row);
