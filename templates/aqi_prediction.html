@@ -3,8 +3,136 @@
 {% block title %}AQI Prediction{% endblock %}
 
 {% block content %}
-<div class="container py-5">
-    <h1 class="text-center">AQI Prediction</h1>
-    <p class="text-center text-muted">This page will display AQI forecasts.</p>
+<div class="container py-4">
+    <!-- Header -->
+    <div class="card header-card mb-4 p-4">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h1><i class="fas fa-wind weather-icon"></i>AQI Prediction AI</h1>
+                <p class="lead mb-0">Advanced AQI predictions using deep learning</p>
+            </div>
+            <div class="col-md-6 d-flex justify-content-end">
+                <form id="aqi-prediction-form" class="d-inline-flex gap-2 align-items-center">
+                    <label for="station" class="mb-0">Select Station:</label>
+                    <select id="station" name="station" class="form-select" style="width: auto;">
+                        <option value="Railway Colony, Guwahati - APCB_6941">Railway Colony, Guwahati - APCB_6941</option>
+                        <option value="Railway Colony, Guwahati - APCB_10903">Railway Colony, Guwahati - APCB_10903</option>
+                        <option value="Pan Bazaar, Guwahati - APCB_42240">Pan Bazaar, Guwahati - APCB_42240</option>
+                        <option value="IITG, Guwahati - PCBA_361411">IITG, Guwahati - PCBA_361411</option>
+                        <option value="IITG, Guwahati - PCBA_3409360">IITG, Guwahati - PCBA_3409360</option>
+                        <option value="LGBI Airport, Guwahati - PCBA_3409390">LGBI Airport, Guwahati - PCBA_3409390</option>
+                    </select>
+                    <label for="days" class="mb-0">Forecast days:</label>
+                    <select id="days" name="days" class="form-select" style="width: auto;">
+                        <option value="3">3 days</option>
+                        <option value="7" selected>7 days</option>
+                        <option value="14">14 days</option>
+                    </select>
+                    <button type="submit" class="btn btn-light">
+                        <i class="fas fa-sync-alt me-2"></i>Update
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading indicator -->
+    <div id="loading" class="text-center my-5" style="display: none;">
+        <div class="loader"></div>
+        <p class="mt-3">Loading AQI predictions...</p>
+    </div>
+
+    <!-- AQI Predictions container -->
+    <div id="aqi-predictions-container" style="display: none;">
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0"><i class="fas fa-smog me-2"></i>AQI Forecast</h4>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover prediction-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>AQI</th>
+                                <th>CO</th>
+                                <th>NO</th>
+                                <th>NO2</th>
+                                <th>O3</th>
+                                <th>SO2</th>
+                                <th>PM2.5</th>
+                                <th>PM10</th>
+                                <th>NH3</th>
+                            </tr>
+                        </thead>
+                        <tbody id="aqi-predictions"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-chart-line me-2"></i>AQI Plot</h4>
+            </div>
+            <div class="card-body text-center">
+                <img id="aqi-plot" class="img-fluid" alt="AQI Plot">
+            </div>
+        </div>
+    </div>
 </div>
+
+<script>
+    document.getElementById('aqi-prediction-form').addEventListener('submit', function (e) {
+        e.preventDefault(); // Prevent the form from submitting normally
+        const formData = new FormData(this);
+
+        // Show loading indicator
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('aqi-predictions-container').style.display = 'none';
+
+        fetch('/predict-aqi', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('loading').style.display = 'none';
+
+            // Populate AQI predictions table
+            const aqiPredictionsTable = document.getElementById('aqi-predictions');
+            aqiPredictionsTable.innerHTML = ''; // Clear existing rows
+            data.predictions.forEach(prediction => {
+                const row = document.createElement('tr');
+                // Format the date to display only the date part (YYYY-MM-DD)
+                const formattedDate = new Date(prediction.date).toISOString().split('T')[0];
+                row.innerHTML = `
+                    <td>${formattedDate}</td>
+                    <td>${prediction.avg_aqi.toFixed(2)}</td>
+                    <td>${prediction.co.toFixed(2)}</td>
+                    <td>${prediction.no.toFixed(2)}</td>
+                    <td>${prediction.no2.toFixed(2)}</td>
+                    <td>${prediction.o3.toFixed(2)}</td>
+                    <td>${prediction.so2.toFixed(2)}</td>
+                    <td>${prediction.pm2_5.toFixed(2)}</td>
+                    <td>${prediction.pm10.toFixed(2)}</td>
+                    <td>${prediction.nh3.toFixed(2)}</td>
+                `;
+                aqiPredictionsTable.appendChild(row);
+            });
+
+            // Display the AQI plot
+            document.getElementById('aqi-plot').src = data.plot;
+
+            // Show AQI predictions container
+            document.getElementById('aqi-predictions-container').style.display = 'block';
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to fetch AQI predictions. Please try again.');
+            document.getElementById('loading').style.display = 'none';
+        });
+    });
+</script>
+
 {% endblock %}
