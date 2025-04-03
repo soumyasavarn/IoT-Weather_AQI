@@ -21,6 +21,7 @@ import pandas as pd
 import datetime 
 from tensorflow.python.keras.models import load_model
 import tensorflow as tf
+from utility_functions import * # ADD SMALL UTILITY FUNCTIONS IN THE SCRIPT AND CALL IT HERE
 app = Flask(__name__)
 
 # Configuration
@@ -317,10 +318,7 @@ def aqi_prediction():
     """Render the AQI Prediction page"""
     return render_template('aqi_prediction.html')
 
-@app.route('/iot_prediction')
-def iot_prediction():
-    """Render the Prediction Using IoT Device page"""
-    return render_template('iot_prediction.html')
+
 
 def to_timestamp(dt):
     """Convert a datetime object to a Unix timestamp."""
@@ -578,16 +576,56 @@ def predict():
         app.logger.error("Error in /predict: %s", e, exc_info=True)
         return jsonify({"error": str(e)}), 500
 
-# HTTP POST endpoint to receive new weather data from the ESP32 or any client
+#####################################################
+#######################################################
+######################################################
+# REAL TIME DATA RELATED CODE BELOW
+#----------------------------------------
+
+from collections import deque
+pollutants = ['avg_aqi', 'co', 'no', 'no2', 'o3', 'so2', 'pm2_5', 'pm10', 'nh3']
+latest_data = deque(maxlen=7)  # Store the latest 7 days of data
+# Initialize with empty readings
+for _ in range(7):
+    latest_data.append({pollutant: None for pollutant in pollutants})
+    latest_data[-1]["alert"] = None  # Include alert field
+
+@app.route("/get_latest_data")
+def get_latest_data():
+    return jsonify(list(latest_data))
+
+@app.route('/iot_prediction')
+def iot_prediction():
+    """Render the Prediction Using IoT Device page"""
+    return render_template('iot_prediction.html', data=latest_data)
+
+
 @app.route("/post_data", methods=["POST"])
 def post_data():
-    # Expecting a JSON payload, e.g., {"temperature": 25, "humidity": 60}
     if request.is_json:
         data = request.get_json()
         print("HTTP POST received:", data)
+
+        # Construct a new entry with pollutants and alert status
+        new_entry = {pollutant: data.get(pollutant) for pollutant in pollutants}
+        new_entry["alert"] = data.get("alert")
+
+        # Append the latest data, automatically maintaining the sliding window
+        latest_data.append(new_entry)
+
+        # Trigger alert if needed
+        if data.get("alert") == 1:
+            send_weather_alert("Pollution Alert", "High pollution levels detected!")
+            play_alert_sound()
+
         return jsonify({"status": "success"}), 200
     else:
         return jsonify({"error": "Invalid or missing JSON payload"}), 400
+
+###########################################################################
+###########################################################################
+##########################################################################
+
     
 
 if __name__ == '__main__':

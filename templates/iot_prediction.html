@@ -1,10 +1,82 @@
 {% extends "layout.html" %}
 
-{% block title %}Prediction Using IoT Device{% endblock %}
+{% block title %}Live IoT Data{% endblock %}
 
 {% block content %}
 <div class="container py-5">
-    <h1 class="text-center">Prediction Using IoT Device</h1>
-    <p class="text-center text-muted">This page will display predictions based on IoT device data.</p>
+    <h1 class="text-center mb-4">🔍 Live IoT Sensor Data</h1>
+    <p class="text-center text-muted">📡 Real-time IoT Pollutant Data Streaming</p>
+
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card shadow-lg rounded-4">
+                <div class="card-body text-center">
+                    <h3 class="mb-3">🌍 Latest Pollutant Readings</h3>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>Avg AQI</th>
+                                    <th>CO</th>
+                                    <th>NO</th>
+                                    <th>NO₂</th>
+                                    <th>O₃</th>
+                                    <th>SO₂</th>
+                                    <th>PM2.5</th>
+                                    <th>PM10</th>
+                                    <th>NH₃</th>
+                                    <th>Alert</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pollutant-data">
+                                <tr><td colspan="11" class="text-center">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+<script>
+    function fetchSensorData() {
+        fetch('/get_latest_data')
+        .then(response => response.json())
+        .then(data => {
+            let tableBody = document.getElementById("pollutant-data");
+            if (!Array.isArray(data) || data.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="11" class="text-center">No Data Available</td></tr>';
+                return;
+            }
+
+            let rows = "";
+            data.slice(-7).reverse().forEach(entry => { // Reverse the latest 7 entries
+                rows += `<tr>
+                    <td>${entry.timestamp ? new Date(entry.timestamp).toLocaleString() : '--'}</td>
+                    <td>${entry.avg_aqi ?? '--'}</td>
+                    <td>${entry.co ?? '--'}</td>
+                    <td>${entry.no ?? '--'}</td>
+                    <td>${entry.no2 ?? '--'}</td>
+                    <td>${entry.o3 ?? '--'}</td>
+                    <td>${entry.so2 ?? '--'}</td>
+                    <td>${entry.pm2_5 ?? '--'}</td>
+                    <td>${entry.pm10 ?? '--'}</td>
+                    <td>${entry.nh3 ?? '--'}</td>
+                    <td class="fw-bold ${entry.alert === 1 ? 'text-danger' : 'text-success'}">
+                        ${entry.alert === true ? '⚠️ Alert' : '✅ No Alert'}
+                    </td>
+                </tr>`;
+            });
+
+            tableBody.innerHTML = rows; // Update the table in one step
+        })
+        .catch(error => console.error("Error fetching data:", error));
+    }
+
+    setInterval(fetchSensorData, 5000);
+    fetchSensorData();
+</script>
 {% endblock %}
