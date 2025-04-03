@@ -4,6 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Weather Prediction Dashboard powered by AI and IoT for accurate weather and AQI forecasting.">
+    <meta name="author" content="Weather Prediction Team">
     <title>{% block title %}Weather Prediction Dashboard{% endblock %}</title>
 
     <!-- Bootstrap CSS -->
@@ -15,12 +17,13 @@
         body {
             background-color: #f5f7fb;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333;
         }
         .card {
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             margin-bottom: 20px;
-            transition: transform 0.3s;
+            transition: transform 0.3s ease-in-out;
         }
         .card:hover {
             transform: translateY(-5px);
@@ -28,6 +31,8 @@
         .header-card {
             background: linear-gradient(135deg, #4b6cb7, #182848);
             color: white;
+            padding: 20px;
+            border-radius: 10px;
         }
         .header-card h1 {
             font-weight: 700;
@@ -38,10 +43,22 @@
         }
         .navbar-nav .nav-link {
             font-weight: 500;
+            transition: color 0.3s ease-in-out;
+        }
+        .navbar-nav .nav-link:hover {
+            color: #182848 !important;
         }
         footer {
             background-color: #f0f2f5;
             padding: 10px 0;
+            font-size: 0.9rem;
+        }
+        footer a {
+            color: #4b6cb7 !important;
+            text-decoration: none;
+        }
+        footer a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
@@ -50,7 +67,9 @@
     <!-- Navigation Bar -->
     <nav class="navbar navbar-expand-md navbar-light bg-light border">
         <div class="container-fluid">
-            <a class="navbar-brand" href="/">Weather Dashboard</a>
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-cloud-sun"></i> Weather Dashboard
+            </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -60,6 +79,11 @@
                     <li class="nav-item"><a class="nav-link" href="/aqi_prediction">AQI Prediction</a></li>
                     <li class="nav-item"><a class="nav-link" href="/iot_prediction">Prediction Using IoT Device</a></li>
                 </ul>
+                <!-- Optional Search Bar -->
+                <form class="d-flex ms-3">
+                    <input class="form-control me-2" type="search" placeholder="Search..." aria-label="Search">
+                    <button class="btn btn-outline-primary" type="submit"><i class="fas fa-search"></i></button>
+                </form>
             </div>
         </div>
     </nav>
@@ -72,11 +96,20 @@
 
     <!-- Footer -->
     <footer class="text-center text-muted">
-        <small>&copy; 2025 Weather Prediction Dashboard. Powered by AI and IoT.</small>
+        <small>&copy; 2025 Weather Prediction Dashboard. Powered by AI and IoT.</small><br>
+        <small><a href="/privacy-policy">Privacy Policy</a> | <a href="/terms-of-service">Terms of Service</a></small>
     </footer>
 
     <!-- Bootstrap JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Optional Custom JS -->
+    <script>
+        // Example JavaScript for interactivity
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Weather Prediction Dashboard Loaded!');
+        });
+    </script>
 </body>
 
 </html>
