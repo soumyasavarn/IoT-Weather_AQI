@@ -18,7 +18,7 @@ import base64
 import joblib
 import numpy as np
 import pandas as pd
-from datetime import timedelta
+import datetime 
 from tensorflow.python.keras.models import load_model
 import tensorflow as tf
 app = Flask(__name__)
@@ -536,13 +536,13 @@ def predict():
 
     print(station)
     # Fetch historical weather
-    end_date = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
-    start_date = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+    end_date = (datetime.datetime.now() - datetime.timedelta(days=1)).strftime('%Y-%m-%d')
+    start_date = (datetime.datetime.now() - datetime.timedelta(days=30)).strftime('%Y-%m-%d')
     df = get_historical_weather(latitude, longitude, start_date, end_date)
 
     # Preprocess and filter up to today
     processed_df = preprocess_data(df)
-    current_date = datetime.now().date()
+    current_date = datetime.datetime.now().date()
     processed_df = processed_df[processed_df['date'] <= pd.Timestamp(current_date)]
     print(processed_df)
     print("Column Names")
@@ -559,6 +559,7 @@ def predict():
         for target in targets
     }
 
+    # Visualizations and feature importances
     visualizations = {
         target: create_visualization(df, pred_df, target)
         for target in targets
@@ -567,6 +568,7 @@ def predict():
 
     # Return full result
     try:
+        # Your existing prediction logic here
         return jsonify({
             'station': name,
             'predictions': predictions,
