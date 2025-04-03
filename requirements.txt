@@ -25,3 +25,4 @@ gunicorn
 requests
 tqdm
 tensorflow
+numpy
