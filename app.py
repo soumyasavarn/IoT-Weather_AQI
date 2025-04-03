@@ -239,8 +239,7 @@ import numpy as np
 import joblib
 import base64
 import io
-from eli5.sklearn import PermutationImportance
-import eli5
+
 from sklearn.inspection import permutation_importance
 
 def get_historical_weather(latitude, longitude, start_date, end_date):
