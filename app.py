@@ -414,75 +414,83 @@ def predict_aqi():
     print(f"Station is {station}")
 
     stations = {
-    'Railway Colony, Guwahati - APCB_6941': {'latitude': 26.1445, 'longitude': 91.7362},
-    'Railway Colony, Guwahati - APCB_10903': {'latitude': 26.181742, 'longitude': 91.78063},
-    'Pan Bazaar, Guwahati - APCB_42240': {'latitude': 26.1875, 'longitude': 91.744194},
-    'IITG, Guwahati - PCBA_361411': {'latitude': 26.2028636, 'longitude': 91.70046436},
-    'IITG, Guwahati - PCBA_3409360': {'latitude': 26.2028636, 'longitude': 91.70046436},
-    'LGBI Airport, Guwahati - PCBA_3409390': {'latitude': 26.10887, 'longitude': 91.589544}
-        }
+        'Railway Colony, Guwahati - APCB_6941': {'latitude': 26.1445, 'longitude': 91.7362},
+        'Railway Colony, Guwahati - APCB_10903': {'latitude': 26.181742, 'longitude': 91.78063},
+        'Pan Bazaar, Guwahati - APCB_42240': {'latitude': 26.1875, 'longitude': 91.744194},
+        'IITG, Guwahati - PCBA_361411': {'latitude': 26.2028636, 'longitude': 91.70046436},
+        'IITG, Guwahati - PCBA_3409360': {'latitude': 26.2028636, 'longitude': 91.70046436},
+        'LGBI Airport, Guwahati - PCBA_3409390': {'latitude': 26.10887, 'longitude': 91.589544}
+    }
 
-
+    # Set up for fetching the latest 7 days with valid data
     end_date = datetime.date.today()
-    start_date = end_date - datetime.timedelta(days=6)
-    print(f"\nFetching air quality data for {station} (lat: {stations[station]['latitude']}, lon: {stations[station]['longitude']})")
-    current_date = start_date
+    window_size = 7  # We need a full 7-day window for predictions
     records = []
-    while current_date <= end_date:
+    current_date = end_date
+
+    print(f"\nFetching air quality data for {station} (lat: {stations[station]['latitude']}, lon: {stations[station]['longitude']})")
+    # Keep going back day-by-day until we have 7 valid records
+    while len(records) < window_size:
         avg_aqi, avg_components = fetch_daily_air_quality(stations[station], current_date)
         
-        # Build a record (dictionary) with the station name, date, and pollutant averages
-        record = {
-            "station": station,
-            "date": current_date,
-            "avg_aqi": avg_aqi
-        }
-        for comp, value in avg_components.items():
-            record[comp] = value
-                
-        print(f"  {current_date}: AQI={avg_aqi}, Pollutants={avg_components}")
-        records.append(record)
-        # Advance to the next day
-        current_date += datetime.timedelta(days=1)
-        # Pause briefly to respect API rate limits (adjust as necessary)
+        # If the API returns valid data (adjust the condition as needed)
+        if avg_aqi is not None:
+            # Build a record (dictionary) with the station name, date, and pollutant averages
+            record = {
+                "station": station,
+                "date": current_date,
+                "avg_aqi": avg_aqi
+            }
+            for comp, value in avg_components.items():
+                record[comp] = value
+
+            records.append(record)
+            print(f"  {current_date}: AQI={avg_aqi}, Pollutants={avg_components}")
+        else:
+            print(f"  No data for {current_date}. Skipping.")
+
+        # Go one day back and pause briefly (to respect API rate limits)
+        current_date -= datetime.timedelta(days=1)
         time.sleep(1)
 
-    df = pd.DataFrame(records)
-    X = create_input_sequences(df, pollutants=['avg_aqi', 'co', 'no', 'no2', 'o3', 'so2', 'pm2_5', 'pm10', 'nh3'], window_size=7)
-    scaler = joblib.load("models/aqi_scaler.pkl")
-    model = tf.keras.models.load_model("models/aqi_best_model.keras")
-
+    # Sort the records in ascending order by date to form a proper time series
+    records = sorted(records, key=lambda r: r["date"])
     df = pd.DataFrame(records)
 
+    # Prepare for prediction using the last 7 days of data
     pollutants = ['avg_aqi', 'co', 'no', 'no2', 'o3', 'so2', 'pm2_5', 'pm10', 'nh3']
     window_size = 7
 
-    # Create initial input sequence
+    # Ensure the data is sorted by date and drop any rows with missing values in required columns
     df = df.sort_values("date").reset_index(drop=True)
     df = df.dropna(subset=pollutants)
-    # Initial real 7-day window: shape (7, 9)
 
+    # Create the initial window from the latest 7 days
     window = df[pollutants].values[-window_size:]  # shape: (7, 9)
+
+    # Load scaler and trained model
+    scaler = joblib.load("models/aqi_scaler.pkl")
+    model = tf.keras.models.load_model("models/aqi_best_model.keras")
 
     predictions = []
     prediction_dates = []
 
+    # Predict AQI for the specified number of future days
     for step in range(days):
-        window_flat = window.flatten().reshape(1, -1)   # (1, 63)
+        window_flat = window.flatten().reshape(1, -1)   # shape: (1, 63)
         X_scaled = scaler.transform(window_flat)
-
-        next_day_pred = model.predict(X_scaled)[0]  # (9,)
+        next_day_pred = model.predict(X_scaled)[0]  # shape: (9,)
         predictions.append(next_day_pred)
 
-        window = np.vstack([window[1:], next_day_pred])  
-
+        # Update the window by dropping the oldest day and appending the new prediction
+        window = np.vstack([window[1:], next_day_pred])
         prediction_dates.append(end_date + datetime.timedelta(days=step + 1))
 
     # Convert predictions to a DataFrame for easier handling
     pred_df = pd.DataFrame(predictions, columns=pollutants)
     pred_df['date'] = prediction_dates
 
-    # Generate a plot
+    # Generate a plot of the predicted AQI over time
     plt.figure(figsize=(10, 6))
     plt.plot(pred_df['date'], pred_df['avg_aqi'], label='Predicted AQI', marker='o')
     plt.xlabel('Date')
@@ -504,6 +512,7 @@ def predict_aqi():
         'predictions': pred_df.to_dict('records'),
         'plot': f'data:image/png;base64,{graph}'
     })
+
 
 @app.route('/predict', methods=['POST'])
 def predict():
@@ -550,7 +559,6 @@ def predict():
         for target in targets
     }
 
-    # Visualizations and feature importances
     visualizations = {
         target: create_visualization(df, pred_df, target)
         for target in targets
@@ -559,7 +567,6 @@ def predict():
 
     # Return full result
     try:
-        # Your existing prediction logic here
         return jsonify({
             'station': name,
             'predictions': predictions,
