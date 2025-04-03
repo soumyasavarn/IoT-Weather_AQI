@@ -578,6 +578,17 @@ def predict():
         app.logger.error("Error in /predict: %s", e, exc_info=True)
         return jsonify({"error": str(e)}), 500
 
+# HTTP POST endpoint to receive new weather data from the ESP32 or any client
+@app.route("/post_data", methods=["POST"])
+def post_data():
+    # Expecting a JSON payload, e.g., {"temperature": 25, "humidity": 60}
+    if request.is_json:
+        data = request.get_json()
+        print("HTTP POST received:", data)
+        return jsonify({"status": "success"}), 200
+    else:
+        return jsonify({"error": "Invalid or missing JSON payload"}), 400
+    
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5000, debug=True)

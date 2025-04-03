@@ -21,21 +21,7 @@ def get_data():
         print (jsonify(data))
     return jsonify(data)
 
-# HTTP POST endpoint to receive new weather data from the ESP32 or any client
-@app.route("/post_data", methods=["POST"])
-def post_data():
-    # Expecting a JSON payload, e.g., {"temperature": 25, "humidity": 60}
-    if request.is_json:
-        data = request.get_json()
-        print("HTTP POST received:", data)
-        with weather_data_lock:
-            weather_data_list.append(data)
-            # Keep only the latest 10 records
-            if len(weather_data_list) > 10:
-                weather_data_list[:] = weather_data_list[-10:]
-        return jsonify({"status": "success"}), 200
-    else:
-        return jsonify({"error": "Invalid or missing JSON payload"}), 400
+
 
 if __name__ == "__main__":
     # Run the Flask server on all network interfaces on port 5000 with debug mode enabled.
