@@ -12,8 +12,8 @@ import random
 # Configuration
 SSID = "SOUMYA 6843"
 PASSWORD = "4e%8R843"
-SERVER_IP = "10.150.36.127"
-SERVER_PORT = 5000
+SERVER_IP = "192.168.124.11"
+SERVER_PORT = 8080
 
 pollutants = ['avg_aqi', 'co', 'no', 'no2', 'o3', 'so2', 'pm2_5', 'pm10', 'nh3']
 
