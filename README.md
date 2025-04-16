@@ -64,7 +64,7 @@ IoT-Weather_AQI/
    ```
 
 4. **View the Dashboard**  
-   Open a browser and visit: [http://127.0.0.1:5000/](http://127.0.0.1:5000/)
+   Open a browser and visit: [http://127.0.0.1:8080/](http://127.0.0.1:8080/)
 
 ---
 
