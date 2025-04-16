@@ -268,6 +268,10 @@ def iot_prediction():
     """Render the Prediction Using IoT Device page"""
     return render_template('iot_prediction.html', data=latest_data)
 
+@app.route('/about')
+def about():
+    return render_template('about.html')
+
 
 @app.route("/post_data", methods=["POST"])
 def post_data():

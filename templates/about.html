@@ -1,0 +1,284 @@
+{% extends "layout.html" %}
+
+{% block title %}Weather Prediction - Team Members{% endblock %}
+
+{% block content %}
+<header>
+    <div class="container">
+        <h1>Weather AQI prediction Project</h1>
+        <p class="subtitle">This project is done under the DA353 (IoT Lab)</p>
+    </div>
+</header>
+
+<main class="container">
+    <section>
+        <h2 class="section-title">Instructors</h2>
+        <div class="team-grid">
+            <!-- Instructor 1 -->
+            <div class="member-card">
+                <img src="/api/placeholder/400/320" alt="Arghyadip" class="member-photo">
+                <div class="member-info">
+                    <h3 class="member-name">Dr. Arghyadip Roy</h3>
+                    <div class="member-role">Instructor</div>
+                    <p class="member-details">Assistant Professor at Mehta Family School of Data Science and Artificial Intelligence</p>
+                    <!-- <a href="https://www.linkedin.com/in/arghosengupta/" class="social-link" target="_blank">
+                        <span class="social-icon">in</span> LinkedIn Profile
+                    </a> -->
+                </div>
+            </div>
+            
+            <!-- Instructor 2 -->
+            <div class="member-card">
+                <img src="/api/placeholder/400/320" alt="Ratnajit" class="member-photo">
+                <div class="member-info">
+                    <h3 class="member-name">Dr. Ratnajit Bhattacharya</h3>
+                    <div class="member-role">Instructor</div>
+                    <p class="member-details">Professor at Mehta Family School of Data Science and Artificial Intelligence</p>
+                    <!-- <a href="https://www.linkedin.com/in/ratnajitbhattacharya/" class="social-link" target="_blank">
+                        <span class="social-icon">in</span> LinkedIn Profile
+                    </a> -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+    <section>
+        <h2 class="section-title">Teaching Assistants</h2>
+        <div class="team-grid">
+            <!-- TA 1 -->
+            <div class="member-card">
+                <img src="/api/placeholder/400/320" alt="Vikky Masih" class="member-photo">
+                <div class="member-info">
+                    <h3 class="member-name">Vikky Masih</h3>
+                    <div class="member-role">Teaching Assistant</div>
+                    <!-- <p class="member-details">Expert in computational methods for weather prediction models and statistical analysis.</p>
+                    <a href="https://www.linkedin.com/in/vickychen/" class="social-link" target="_blank">
+                        <span class="social-icon">in</span> LinkedIn Profile
+                    </a> -->
+                </div>
+            </div>
+            
+            <!-- TA 2 -->
+            <div class="member-card">
+                <img src="/api/placeholder/400/320" alt="Shania H" class="member-photo">
+                <div class="member-info">
+                    <h3 class="member-name">Shania H</h3>
+                    <div class="member-role">Teaching Assistant</div>
+                    <!-- <p class="member-details">Specialized in data visualization techniques and interactive dashboard development.</p> -->
+                    <!-- <a href="https://www.linkedin.com/in/shaniapatel/" class="social-link" target="_blank">
+                        <span class="social-icon">in</span> LinkedIn Profile
+                    </a> -->
+                </div>
+            </div>
+        </div>
+    </section>
+    
+
+
+
+    <section>
+        <h2 class="section-title">Team Members</h2>
+        <div class="team-grid">
+            <!-- Team Member 1 -->
+            <div class="member-card">
+                <img src="/api/placeholder/400/320" alt="Team Member 1" class="member-photo">
+                <div class="member-info">
+                    <h3 class="member-name">Ishan Chandra Gupta</h3>
+                    <div class="member-role">Data Scientist</div>
+                    <p class="member-details">Specializes in machine learning models for atmospheric data analysis and prediction algorithms.</p>
+                    <a href="https://www.linkedin.com/in/alexjohnson/" class="social-link" target="_blank">
+                        <span class="social-icon">in</span> LinkedIn Profile
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Team Member 2 -->
+            <div class="member-card">
+                <img src="/api/placeholder/400/320" alt="Team Member 2" class="member-photo">
+                <div class="member-info">
+                    <h3 class="member-name">Rishab Sonthalia</h3>
+                    <div class="member-role">Frontend Developer</div>
+                    <p class="member-details">Expert in creating intuitive interfaces for complex weather data visualization and user interaction.</p>
+                    <a href="https://www.linkedin.com/in/taylorsmith/" class="social-link" target="_blank">
+                        <span class="social-icon">in</span> LinkedIn Profile
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Team Member 3 -->
+            <div class="member-card">
+                <img src="/api/placeholder/400/320" alt="Team Member 3" class="member-photo">
+                <div class="member-info">
+                    <h3 class="member-name">Saptarshi Mukherjee</h3>
+                    <div class="member-role">Meteorology Specialist</div>
+                    <p class="member-details">Provides domain expertise in meteorological patterns and weather system dynamics.</p>
+                    <a href="https://www.linkedin.com/in/jordanlee/" class="social-link" target="_blank">
+                        <span class="social-icon">in</span> LinkedIn Profile
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Team Member 4 -->
+            <div class="member-card">
+                <img src="/api/placeholder/400/320" alt="Team Member 4" class="member-photo">
+                <div class="member-info">
+                    <h3 class="member-name">Soumya Savarn</h3>
+                    <div class="member-role">Backend Developer</div>
+                    <p class="member-details">Specializes in data pipeline architecture and real-time processing systems.</p>
+                    <a href="https://www.linkedin.com/in/morganrivera/" class="social-link" target="_blank">
+                        <span class="social-icon">in</span> LinkedIn Profile
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+   
+</main>
+
+<style>
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
+        color: #333;
+    }
+    
+    header {
+        background: linear-gradient(135deg, #3498db, #2c3e50);
+        color: white;
+        text-align: center;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+    }
+    
+    h1 {
+        margin: 0;
+        font-size: 2.5rem;
+    }
+    
+    .subtitle {
+        font-size: 1.2rem;
+        opacity: 0.8;
+    }
+    
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 2rem;
+    }
+    
+    .section-title {
+        text-align: center;
+        margin-bottom: 2rem;
+        color: #2c3e50;
+        position: relative;
+        padding-bottom: 0.5rem;
+    }
+    
+    .section-title:after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 80px;
+        height: 3px;
+        background-color: #3498db;
+    }
+    
+    .team-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 2rem;
+        margin-bottom: 3rem;
+    }
+    
+    .member-card {
+        background-color: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s, box-shadow 0.3s;
+    }
+    
+    .member-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+    }
+    
+    .member-photo {
+        width: 100%;
+        height: 250px;
+        object-fit: cover;
+    }
+    
+    .member-info {
+        padding: 1.5rem;
+    }
+    
+    .member-name {
+        margin: 0 0 0.5rem;
+        color: #2c3e50;
+        font-size: 1.3rem;
+    }
+    
+    .member-role {
+        color: #3498db;
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+    
+    .member-details {
+        margin-bottom: 1.5rem;
+        font-size: 0.95rem;
+    }
+    
+    .social-link {
+        display: inline-flex;
+        align-items: center;
+        background-color: #0077b5;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 5px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: background-color 0.2s;
+    }
+    
+    .social-link:hover {
+        background-color: #005e8b;
+    }
+    
+    .social-icon {
+        margin-right: 0.5rem;
+        font-size: 1.1rem;
+    }
+    
+    @media (max-width: 768px) {
+        .team-grid {
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        }
+    }
+</style>
+
+<script>
+    // Add interactive elements
+    document.addEventListener('DOMContentLoaded', function() {
+        const cards = document.querySelectorAll('.member-card');
+        
+        cards.forEach(card => {
+            card.addEventListener('click', function() {
+                // Get the LinkedIn link from this card
+                const linkedinLink = this.querySelector('.social-link').getAttribute('href');
+                
+                // Simple animation to show the card was clicked
+                this.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    this.style.transform = '';
+                }, 200);
+            });
+        });
+    });
+</script>
+{% endblock %}
