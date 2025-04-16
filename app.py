@@ -47,10 +47,6 @@ def initialize():
     
 
 
-
-
-
-
 # Routes
 @app.route('/')
 def index():

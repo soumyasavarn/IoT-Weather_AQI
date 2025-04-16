@@ -16,7 +16,7 @@
         <div class="team-grid">
             <!-- Instructor 1 -->
             <div class="member-card">
-                <img src="/api/placeholder/400/320" alt="Arghyadip" class="member-photo">
+                <img src="../static/ins1.png" alt="Arghyadip" class="member-photo">
                 <div class="member-info">
                     <h3 class="member-name">Dr. Arghyadip Roy</h3>
                     <div class="member-role">Instructor</div>
@@ -29,7 +29,7 @@
             
             <!-- Instructor 2 -->
             <div class="member-card">
-                <img src="/api/placeholder/400/320" alt="Ratnajit" class="member-photo">
+                <img src="../static/ins2.png" alt="Ratnajit" class="member-photo">
                 <div class="member-info">
                     <h3 class="member-name">Dr. Ratnajit Bhattacharya</h3>
                     <div class="member-role">Instructor</div>
@@ -48,7 +48,7 @@
         <div class="team-grid">
             <!-- TA 1 -->
             <div class="member-card">
-                <img src="/api/placeholder/400/320" alt="Vikky Masih" class="member-photo">
+                <img src="" alt="Vikky Masih" class="member-photo">
                 <div class="member-info">
                     <h3 class="member-name">Vikky Masih</h3>
                     <div class="member-role">Teaching Assistant</div>
@@ -61,7 +61,7 @@
             
             <!-- TA 2 -->
             <div class="member-card">
-                <img src="/api/placeholder/400/320" alt="Shania H" class="member-photo">
+                <img src="" alt="Shania H" class="member-photo">
                 <div class="member-info">
                     <h3 class="member-name">Shania H</h3>
                     <div class="member-role">Teaching Assistant</div>
@@ -82,12 +82,12 @@
         <div class="team-grid">
             <!-- Team Member 1 -->
             <div class="member-card">
-                <img src="/api/placeholder/400/320" alt="Team Member 1" class="member-photo">
+                <img src="../static/1.png" alt="Team Member 1" class="member-photo">
                 <div class="member-info">
                     <h3 class="member-name">Ishan Chandra Gupta</h3>
-                    <div class="member-role">Data Scientist</div>
-                    <p class="member-details">Specializes in machine learning models for atmospheric data analysis and prediction algorithms.</p>
-                    <a href="https://www.linkedin.com/in/alexjohnson/" class="social-link" target="_blank">
+                    <!-- <div class="member-role">Frontend Developer</div> -->
+                    <!-- <p class="member-details">Specializes in machine learning models for atmospheric data analysis and prediction algorithms.</p> -->
+                    <a href="https://www.linkedin.com/in/ishangupta2307/" class="social-link" target="_blank">
                         <span class="social-icon">in</span> LinkedIn Profile
                     </a>
                 </div>
@@ -95,12 +95,12 @@
             
             <!-- Team Member 2 -->
             <div class="member-card">
-                <img src="/api/placeholder/400/320" alt="Team Member 2" class="member-photo">
+                <img src="../static/2.png" alt="Team Member 2" class="member-photo">
                 <div class="member-info">
                     <h3 class="member-name">Rishab Sonthalia</h3>
-                    <div class="member-role">Frontend Developer</div>
-                    <p class="member-details">Expert in creating intuitive interfaces for complex weather data visualization and user interaction.</p>
-                    <a href="https://www.linkedin.com/in/taylorsmith/" class="social-link" target="_blank">
+                    <!-- <div class="member-role">Frontend Developer</div> -->
+                    <!-- <p class="member-details">Expert in creating intuitive interfaces for complex weather data visualization and user interaction.</p> -->
+                    <a href="https://www.linkedin.com/in/rishab-sonthalia-482050252/" class="social-link" target="_blank">
                         <span class="social-icon">in</span> LinkedIn Profile
                     </a>
                 </div>
@@ -108,12 +108,12 @@
             
             <!-- Team Member 3 -->
             <div class="member-card">
-                <img src="/api/placeholder/400/320" alt="Team Member 3" class="member-photo">
+                <img src="../static/3.png" alt="Team Member 3" class="member-photo">
                 <div class="member-info">
                     <h3 class="member-name">Saptarshi Mukherjee</h3>
-                    <div class="member-role">Meteorology Specialist</div>
-                    <p class="member-details">Provides domain expertise in meteorological patterns and weather system dynamics.</p>
-                    <a href="https://www.linkedin.com/in/jordanlee/" class="social-link" target="_blank">
+                    <!-- <div class="member-role">Real time Machine Learning</div> -->
+                    <!-- <p class="member-details">Provides domain expertise in meteorological patterns and weather system dynamics.</p> -->
+                    <a href="https://www.linkedin.com/in/saptarshi-mukherjee-438a0524b/" class="social-link" target="_blank">
                         <span class="social-icon">in</span> LinkedIn Profile
                     </a>
                 </div>
@@ -121,12 +121,12 @@
             
             <!-- Team Member 4 -->
             <div class="member-card">
-                <img src="/api/placeholder/400/320" alt="Team Member 4" class="member-photo">
+                <img src="../static/4.png" alt="Team Member 4" class="member-photo">
                 <div class="member-info">
                     <h3 class="member-name">Soumya Savarn</h3>
-                    <div class="member-role">Backend Developer</div>
-                    <p class="member-details">Specializes in data pipeline architecture and real-time processing systems.</p>
-                    <a href="https://www.linkedin.com/in/morganrivera/" class="social-link" target="_blank">
+                    <!-- <div class="member-role">Backend and Hardware</div> -->
+                    <!-- <p class="member-details">Specializes in data pipeline architecture and real-time processing systems.</p> -->
+                    <a href="https://www.linkedin.com/in/soumya-savarn-3483b2165/" class="social-link" target="_blank">
                         <span class="social-icon">in</span> LinkedIn Profile
                     </a>
                 </div>
@@ -208,10 +208,11 @@
     }
     
     .member-photo {
-        width: 100%;
-        height: 250px;
-        object-fit: cover;
+    width: 100%;
+    height: auto;
+    object-fit: cover; /* or remove object-fit if not needed */
     }
+
     
     .member-info {
         padding: 1.5rem;
