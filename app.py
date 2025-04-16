@@ -199,12 +199,13 @@ def predict():
     longitude = station["longitude"]
 
 
-    print(station)
+    print(f"Station is {station}")
     # Fetch historical weather
     end_date = (datetime.datetime.now() - datetime.timedelta(days=1)).strftime('%Y-%m-%d')
     start_date = (datetime.datetime.now() - datetime.timedelta(days=30)).strftime('%Y-%m-%d')
+    print(start_date, end_date)
     df = get_historical_weather(latitude, longitude, start_date, end_date)
-
+    print(df)
     # Preprocess and filter up to today
     processed_df = preprocess_data(df)
     current_date = datetime.datetime.now().date()
@@ -297,4 +298,4 @@ def post_data():
     
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=8080, debug=True)
