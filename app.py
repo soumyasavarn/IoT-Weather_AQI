@@ -63,6 +63,11 @@ def aqi_prediction():
     """Render the AQI Prediction page"""
     return render_template('aqi_prediction.html')
 
+@app.route('/aqi_map')
+def aqi_map():
+    """Render the API Map page"""
+    return render_template('aqi-map.html')
+
 
 
 
