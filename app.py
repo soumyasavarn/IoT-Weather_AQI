@@ -155,7 +155,8 @@ def predict_aqi():
     # Convert predictions to a DataFrame for easier handling
     pred_df = pd.DataFrame(predictions, columns=pollutants)
     pred_df['date'] = prediction_dates
-
+    # Exclude the 'date' column from the comparison
+    pred_df.loc[:, pred_df.columns != 'date'] = pred_df.loc[:, pred_df.columns != 'date'].clip(lower=0)
     # Generate a plot of the predicted AQI over time
     plt.figure(figsize=(10, 6))
     plt.plot(pred_df['date'], pred_df['avg_aqi'], label='Predicted AQI', marker='o')
@@ -218,7 +219,6 @@ def predict():
     pred_df = predict_weather_lstm(processed_df, days)
     pred_df['date'] = pd.to_datetime(pred_df['date'])
     pred_df = pred_df[pred_df['date'] >= pd.Timestamp(current_date)]
-
     # Extract target predictions into dictionary format
     targets = ['temp_min', 'temp_max', 'humidity', 'precipitation']
     predictions = {
