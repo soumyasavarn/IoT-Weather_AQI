@@ -27,16 +27,17 @@ def send_weather_alert(alert_type, message):
     INPUT: (str, str)
     OUTPUT: None (sends an email to multiple recipients in a single email)
     """
+    alert_type = "AQI"
     sender_email = "soumyasavarn2@gmail.com"
     smtp_server = "smtp.gmail.com"
     smtp_port = 587
     sender_password = "blmj huad sqan dbnf"  # Replace with your Gmail app password (CONFIDENTIAL)
     
     # List of recipients
-    recipients = ["s.savagsrn@iitg.ac.in"] # for testing
+    # recipients = ["s.savagsrn@iitg.ac.in"] # for testing
 
     # Final list of recipients (uncomment for actual use)
-    # recipients = ["s.savarn@iitg.ac.in", "g.ishan@iitg.ac.in", "m.saptarshi@iitg.ac.in","s.rishab@iitg.ac.in", "m.vikky@iitg.ac.in","arghyadip@iitg.ac.in"]
+    recipients = ["s.savarn@iitg.ac.in", "g.ishan@iitg.ac.in", "m.saptarshi@iitg.ac.in","s.rishab@iitg.ac.in", "m.vikky@iitg.ac.in","arghyadip@iitg.ac.in"]
     
     subject = f"Weather Alert: {alert_type}"
     
